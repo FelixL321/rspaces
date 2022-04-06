@@ -1,3 +1,4 @@
+use crate::space::Query;
 use crate::space::Space;
 use crate::space::Tuple;
 
@@ -12,8 +13,12 @@ impl SequentialSpace {
 }
 
 impl Space for SequentialSpace {
-    fn get(&mut self) -> Tuple {
-        self.v.pop().unwrap()
+    fn get(&mut self, query: Query) -> Option<Tuple> {
+        if let Some(index) = self.v.iter().position(|t| query.query(t)){
+            Some(self.v.swap_remove(index))
+        }else{
+            None
+        }
     }
     fn put(&mut self, tuple: Tuple) {
         self.v.push(tuple);

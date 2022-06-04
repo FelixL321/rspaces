@@ -1,89 +1,100 @@
 use std::{any::Any, marker::PhantomData};
 
-pub trait Space {
-    fn get(&mut self, query: Query) -> Option<Tuple>;
-    fn put(&mut self, tuple: Tuple);
+pub trait Space<'a> {
+    fn get(&self, query: Query<'a>) -> Option<Tuple<'a>>;
+    fn getp(&self, query: &Query<'a>) -> Option<Tuple<'a>>;
+    fn put(&self, tuple: Tuple<'a>);
 }
 
-pub struct Tuple {
-    fields: Vec<Box<dyn Any>>,
+pub struct Tuple<'a> {
+    fields: Vec<Box<dyn TupleField + 'a>>,
 }
 
-impl Tuple {
-    pub fn new(fields: Vec<Box<dyn Any>>) -> Tuple {
+impl<'a> Tuple<'a> {
+    pub fn new(fields: Vec<Box<dyn TupleField>>) -> Tuple<'a> {
         Tuple { fields }
     }
     pub fn get_field<T: 'static>(&self, index: usize) -> Option<&T> {
-        self.fields.get(index)?.downcast_ref::<T>()
+        let b = (*(*self.fields.get(index)?)).as_any().downcast_ref::<T>();
+        return b;
     }
     pub fn size(&self) -> usize {
         self.fields.len()
     }
-
 }
 
-pub trait QueryField{
-    fn query(&self, element: &Box<dyn Any>) -> bool;
+pub trait QueryField<'a> {
+    fn query(&self, element: &Box<dyn TupleField + 'a>) -> bool;
 }
 
-pub struct Query{
-    pub fields: Vec<Box<dyn QueryField>>,
+pub struct Query<'a> {
+    pub fields: Vec<Box<dyn QueryField<'a>>>,
 }
 
-impl Query{
-    pub fn new() -> Query{
+impl<'a> Query<'a> {
+    pub fn new() -> Query<'a> {
         Query { fields: Vec::new() }
     }
 }
 
-impl Query{
-    pub fn query(&self, tuple: &Tuple) -> bool{
+impl<'a> Query<'a> {
+    pub fn query(&self, tuple: &Tuple<'a>) -> bool {
         let mut res = false;
-        for (q, e) in self.fields.iter().zip(tuple.fields.iter()){
+        for (q, e) in self.fields.iter().zip(tuple.fields.iter()) {
             res = q.query(e);
         }
         res
     }
 }
 
-pub trait Queries : Sized + PartialEq{
-    fn formal() -> Box<FormalField<Self>>{
+pub trait Queries: Sized + PartialEq {
+    fn formal() -> Box<FormalField<Self>> {
         Box::new(FormalField { data: PhantomData })
     }
-    fn actual(self) -> Box<ActualField<Self>>{
-        Box::new(ActualField{ data: self})
+    fn actual(self) -> Box<ActualField<Self>> {
+        Box::new(ActualField { data: self })
     }
 }
-impl<T: PartialEq> Queries for T{}
+impl<T: PartialEq> Queries for T {}
 
-pub struct FormalField<T>{
+pub struct FormalField<T> {
     data: PhantomData<T>,
 }
 
-impl<T: 'static> QueryField for FormalField<T>{
-    fn query(&self, element: &Box<dyn Any>) -> bool{
-        match element.downcast_ref::<T>() {
+impl<'a, T: 'static> QueryField<'a> for FormalField<T> {
+    fn query(&self, element: &Box<dyn TupleField + 'a>) -> bool {
+        match (**element).as_any().downcast_ref::<T>() {
             None => false,
             Some(_) => true,
         }
     }
 }
 
-pub struct ActualField<T: PartialEq>{
+pub struct ActualField<T: PartialEq> {
     data: T,
 }
 
-impl<T: PartialEq + 'static> QueryField for ActualField<T>{
-    fn query(&self, element: &Box<dyn Any>) -> bool{
-        match element.downcast_ref::<T>() {
+impl<'a, T: PartialEq + 'static> QueryField<'a> for ActualField<T> {
+    fn query(&self, element: &Box<dyn TupleField + 'a>) -> bool {
+        match (**element).as_any().downcast_ref::<T>() {
             None => false,
             Some(a) => {
                 if *a == self.data {
                     true
-                }else{
+                } else {
                     false
                 }
-            },
+            }
         }
     }
+}
+
+impl<T: Any + Send + Sync> TupleField for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+pub trait TupleField: Send + Sync {
+    fn as_any(&self) -> &dyn Any;
 }

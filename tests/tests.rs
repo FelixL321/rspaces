@@ -1,14 +1,19 @@
 #[cfg(test)]
 mod tests {
-    use rspaces::{SequentialSpace, Space, Tuple, Query, Queries};
-    use std::any::Any;
-    use super::*;
+    use rspaces::{Queries, Query, SequentialSpace, Space, Tuple, TupleField};
+    use std::{sync::Arc, thread};
 
+    #[test]
+    fn anytest() {
+        let x: Box<dyn TupleField> = Box::new(20);
+        let y = (*x).as_any().downcast_ref::<i32>();
+        assert_eq!(20, *y.unwrap());
+    }
     #[test]
     fn tuple_test() {
         let a = 5;
         let b = 'b';
-        let fields: Vec<Box<dyn Any>> = vec![Box::new(a), Box::new(b)];
+        let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
         let tuple = Tuple::new(fields);
 
         let x = tuple.get_field::<i32>(0).expect("could not cast");
@@ -20,7 +25,7 @@ mod tests {
     fn tuple_test_failing() {
         let a: i32 = 5;
         let b: char = 'b';
-        let fields: Vec<Box<dyn Any>> = vec![Box::new(a), Box::new(b)];
+        let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
         let tuple = Tuple::new(fields);
 
         match tuple.get_field::<u64>(0) {
@@ -32,41 +37,62 @@ mod tests {
     }
 
     #[test]
-    fn space_search(){
-        let mut space = SequentialSpace::new();
+    fn space_search() {
+        let space = SequentialSpace::new();
         let a = 5;
         let b = 'b';
-        let fields: Vec<Box<dyn Any>> = vec![Box::new(a), Box::new(b)];
+        let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
         let tuple = Tuple::new(fields);
         space.put(tuple);
         let mut q = Query::new();
         q.fields.push(5.actual());
         q.fields.push(char::formal());
-        if let Some(t) = space.get(q){
+        if let Some(t) = space.get(q) {
             assert!(true);
-        }else{
-            assert!(false,"Didnt find tuple...");
+            println!("{}", t.get_field::<i32>(0).unwrap());
+        } else {
+            assert!(false, "Didnt find tuple...");
         }
-
     }
 
     #[test]
-    fn space_search_failing(){
-        let mut space = SequentialSpace::new();
+    fn space_search_failing() {
+        let space = SequentialSpace::new();
         let a = 5;
         let b = 'b';
-        let fields: Vec<Box<dyn Any>> = vec![Box::new(a), Box::new(b)];
+        let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
         let tuple = Tuple::new(fields);
         space.put(tuple);
         let mut q = Query::new();
         q.fields.push(5.actual());
         q.fields.push(i32::formal());
-        if let Some(t) = space.get(q){
+        if let Some(_t) = space.getp(&q) {
             assert!(false, "We found touple and we should not");
-        }else{
+        } else {
             assert!(true);
         }
+    }
+    #[test]
+    fn multithread() {
+        let sender = Arc::new(SequentialSpace::new());
+        let reciever = Arc::clone(&sender);
+        thread::spawn(move || {
+            let a = 5;
+            let b = 'b';
+            let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
+            let tuple = Tuple::new(fields);
+            sender.put(tuple);
+        });
 
+        let mut q = Query::new();
+        q.fields.push(5.actual());
+        q.fields.push(char::formal());
+        if let Some(t) = reciever.get(q) {
+            assert!(true);
+            assert_eq!(5, *t.get_field::<i32>(0).unwrap());
+            assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        } else {
+            assert!(false, "Didnt find tuple...");
+        }
     }
 }
-

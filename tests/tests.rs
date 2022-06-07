@@ -47,7 +47,7 @@ mod tests {
         let mut q = Query::new();
         q.fields.push(5.actual());
         q.fields.push(char::formal());
-        if let Some(t) = space.get(q) {
+        if let Some(t) = space.get(&q) {
             assert!(true);
             println!("{}", t.get_field::<i32>(0).unwrap());
         } else {
@@ -87,12 +87,38 @@ mod tests {
         let mut q = Query::new();
         q.fields.push(5.actual());
         q.fields.push(char::formal());
-        if let Some(t) = reciever.get(q) {
+        if let Some(t) = reciever.get(&q) {
             assert!(true);
             assert_eq!(5, *t.get_field::<i32>(0).unwrap());
             assert_eq!('b', *t.get_field::<char>(1).unwrap());
         } else {
             assert!(false, "Didnt find tuple...");
+        }
+    }
+    #[test]
+    fn multithread_nonblock() {
+        let sender = Arc::new(SequentialSpace::new());
+        let reciever = Arc::clone(&sender);
+        thread::spawn(move || {
+            let a = 5;
+            let b = 'b';
+            let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
+            let tuple = Tuple::new(fields);
+            sender.put(tuple);
+        });
+
+        let mut q = Query::new();
+        q.fields.push(5.actual());
+        q.fields.push(char::formal());
+        let c = 0;
+        loop {
+            c += 1;
+            if let Some(t) = reciever.getp(&q) {
+                assert_eq!(5, *t.get_field::<i32>(0).unwrap());
+                assert_eq!('b', *t.get_field::<char>(1).unwrap());
+                println!("{}", c);
+                return;
+            }
         }
     }
 }

@@ -22,7 +22,7 @@ impl<'a> SequentialSpace<'a> {
 }
 
 impl<'a> Space<'a> for SequentialSpace<'a> {
-    fn get(&self, query: Query<'a>) -> Option<Tuple<'a>> {
+    fn get(&self, query: &Query<'a>) -> Option<Tuple<'a>> {
         loop {
             match self.getp(&query) {
                 Some(t) => return Some(t),
@@ -53,4 +53,28 @@ impl<'a> Space<'a> for SequentialSpace<'a> {
             tx.send(true);
         }
     }
+    /*fn queryp(&self, query: &Query<'a>) -> Option<Tuple<'a>> {
+        let mut v = self.v.lock().unwrap();
+        if let Some(index) = v.iter().position(|t| query.query(t)) {
+            let ret = (*v.get(index).unwrap()).clone();
+            Some(ret)
+        } else {
+            None
+        }
+    }
+    fn query(&self, query: &Query<'a>) -> Option<Tuple<'a>> {
+        loop {
+            match self.queryp(&query) {
+                Some(t) => return Some(t),
+                None => {
+                    let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
+                    {
+                        let mut l = self.listeners.lock().unwrap();
+                        l.push(tx);
+                    }
+                    let _ = rx.recv();
+                }
+            };
+        }
+    }*/
 }

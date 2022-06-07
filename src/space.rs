@@ -1,13 +1,21 @@
 use std::{any::Any, marker::PhantomData};
 
 pub trait Space<'a> {
-    fn get(&self, query: Query<'a>) -> Option<Tuple<'a>>;
+    fn get(&self, query: &Query<'a>) -> Option<Tuple<'a>>;
     fn getp(&self, query: &Query<'a>) -> Option<Tuple<'a>>;
+    //fn query(&self, query: &Query<'a>) -> Option<Tuple<'a>>;
+    //fn queryp(&self, query: &Query<'a>) -> Option<Tuple<'a>>;
     fn put(&self, tuple: Tuple<'a>);
 }
 
-pub struct Tuple<'a> {
+pub struct Tuple {
     fields: Vec<Box<dyn TupleField + 'a>>,
+}
+
+impl<'a> Clone for Box<dyn TupleField> {
+    fn clone(&self) -> Box<dyn TupleField> {
+        Box::new(self.clone())
+    }
 }
 
 impl<'a> Tuple<'a> {

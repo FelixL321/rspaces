@@ -8,7 +8,7 @@ pub trait Space<'a> {
     fn put(&self, tuple: Tuple<'a>);
 }
 
-pub struct Tuple {
+pub struct Tuple<'a> {
     fields: Vec<Box<dyn TupleField + 'a>>,
 }
 

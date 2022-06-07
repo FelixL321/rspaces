@@ -110,7 +110,7 @@ mod tests {
         let mut q = Query::new();
         q.fields.push(5.actual());
         q.fields.push(char::formal());
-        let c = 0;
+        let mut c = 0;
         loop {
             c += 1;
             if let Some(t) = reciever.getp(&q) {

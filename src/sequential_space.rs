@@ -7,13 +7,13 @@ use crate::space::Query;
 use crate::space::Space;
 use crate::space::Tuple;
 
-pub struct SequentialSpace<'a> {
-    v: Mutex<Vec<Tuple<'a>>>,
+pub struct SequentialSpace {
+    v: Mutex<Vec<Tuple>>,
     listeners: Mutex<Vec<Sender<bool>>>,
 }
 
-impl<'a> SequentialSpace<'a> {
-    pub fn new() -> SequentialSpace<'a> {
+impl SequentialSpace {
+    pub fn new() -> SequentialSpace {
         SequentialSpace {
             v: Mutex::new(Vec::new()),
             listeners: Mutex::new(Vec::new()),
@@ -21,8 +21,8 @@ impl<'a> SequentialSpace<'a> {
     }
 }
 
-impl<'a> Space<'a> for SequentialSpace<'a> {
-    fn get(&self, query: &Query<'a>) -> Option<Tuple<'a>> {
+impl Space for SequentialSpace {
+    fn get(&self, query: &Query) -> Option<Tuple> {
         loop {
             match self.getp(&query) {
                 Some(t) => return Some(t),
@@ -37,7 +37,7 @@ impl<'a> Space<'a> for SequentialSpace<'a> {
             };
         }
     }
-    fn getp(&self, query: &Query<'a>) -> Option<Tuple<'a>> {
+    fn getp(&self, query: &Query) -> Option<Tuple> {
         let mut v = self.v.lock().unwrap();
         if let Some(index) = v.iter().position(|t| query.query(t)) {
             Some(v.swap_remove(index))
@@ -45,7 +45,7 @@ impl<'a> Space<'a> for SequentialSpace<'a> {
             None
         }
     }
-    fn put(&self, tuple: Tuple<'a>) {
+    fn put(&self, tuple: Tuple) {
         let mut v = self.v.lock().unwrap();
         v.push(tuple);
         let mut l = self.listeners.lock().unwrap();
@@ -53,8 +53,8 @@ impl<'a> Space<'a> for SequentialSpace<'a> {
             tx.send(true);
         }
     }
-    /*fn queryp(&self, query: &Query<'a>) -> Option<Tuple<'a>> {
-        let mut v = self.v.lock().unwrap();
+    fn queryp(&self, query: &Query) -> Option<Tuple> {
+        let v = self.v.lock().unwrap();
         if let Some(index) = v.iter().position(|t| query.query(t)) {
             let ret = (*v.get(index).unwrap()).clone();
             Some(ret)
@@ -62,7 +62,7 @@ impl<'a> Space<'a> for SequentialSpace<'a> {
             None
         }
     }
-    fn query(&self, query: &Query<'a>) -> Option<Tuple<'a>> {
+    fn query(&self, query: &Query) -> Option<Tuple> {
         loop {
             match self.queryp(&query) {
                 Some(t) => return Some(t),
@@ -76,5 +76,5 @@ impl<'a> Space<'a> for SequentialSpace<'a> {
                 }
             };
         }
-    }*/
+    }
 }

@@ -1,9 +1,14 @@
-mod sequential_space;
+mod drain_filter;
+mod macros;
+mod query;
+mod repository;
 mod space;
+mod tuple;
 
-pub use crate::sequential_space::SequentialSpace;
+pub use crate::drain_filter::drain_filter;
+pub use crate::query::FieldType;
+pub use crate::query::Template;
+pub use crate::repository::Repository;
 pub use crate::space::Space;
-pub use crate::space::Tuple;
-pub use crate::space::Query;
-pub use crate::space::Queries;
-pub use crate::space::TupleField;
+pub use crate::tuple::Tuple;
+pub use crate::tuple::TupleField;

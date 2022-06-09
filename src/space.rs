@@ -211,8 +211,16 @@ impl Space {
         let mut v = self.v.lock().unwrap();
         v.push(tuple);
         let mut l = self.listeners.lock().unwrap();
-        for tx in l.iter() {
-            tx.send(true);
+        let mut remove = Vec::new();
+        for i in 0..l.len() {
+            let tx = l.get(i).unwrap();
+            match tx.send(true) {
+                Err(e) => panic!("panic: {:?}", e),
+                Ok(_) => remove.push(i),
+            }
+        }
+        for i in remove.iter() {
+            l.remove(*i);
         }
     }
     /**

@@ -103,13 +103,10 @@ mod tests {
         let mut q = Template::new();
         q.fields.push(5.actual());
         q.fields.push(char::formal());
-        let mut c = 0;
         loop {
-            c += 1;
             if let Some(t) = reciever.getp(&q) {
                 assert_eq!(5, *t.get_field::<i32>(0).unwrap());
                 assert_eq!('b', *t.get_field::<char>(1).unwrap());
-                println!("{}", c);
                 return;
             }
         }

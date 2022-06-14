@@ -6,7 +6,8 @@ mod repository;
 mod space;
 mod tuple;
 
-pub use crate::drain_filter::drain_filter;
+pub use crate::gate::Message;
+pub use crate::gate::MessageType;
 pub use crate::query::FieldType;
 pub use crate::query::Template;
 pub use crate::query::TemplateType;

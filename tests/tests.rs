@@ -1,9 +1,10 @@
 #[cfg(test)]
 mod tests {
     use core::time;
+    use rspace_macro::TupleField;
     use rspaces::{
-        create_template, space_put, FieldType, Repository, Space, Template, TemplateType, Tuple,
-        TupleField,
+        create_template, new_tuple, space_put, FieldType, Message, MessageType, Repository, Space,
+        Template, TemplateType, Tuple, TupleField,
     };
     use serde::{Deserialize, Serialize};
     use std::{any::Any, sync::Arc, thread};
@@ -437,32 +438,10 @@ mod tests {
         assert_eq!('b', *bp);
     }
 
-    #[derive(Serialize, Deserialize, Clone, PartialEq)]
+    #[derive(Serialize, Deserialize, Clone, PartialEq, TupleField)]
     struct TestStruct {
         x: i32,
         y: f64,
-    }
-
-    #[typetag::serde]
-    impl TupleField for TestStruct {
-        fn as_any(&self) -> &dyn Any {
-            self
-        }
-        fn box_clone(&self) -> Box<dyn TupleField> {
-            Box::new((*self).clone())
-        }
-        fn query(&self, element: &Box<dyn TupleField>, matching: &TemplateType) -> bool {
-            match matching {
-                TemplateType::Actual => match (*element).as_any().downcast_ref::<Self>() {
-                    Some(e) => *self == *e,
-                    None => false,
-                },
-                TemplateType::Formal => match (*element).as_any().downcast_ref::<Self>() {
-                    Some(_) => true,
-                    None => false,
-                },
-            }
-        }
     }
 
     #[test]
@@ -497,5 +476,60 @@ mod tests {
         let t = space.get(&template);
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
+    }
+
+    #[test]
+    fn typing_test() {
+        let space = Space::new_sequential();
+        space_put!(space, (5, 7));
+        let template = create_template!(5.actual(), 7.actual());
+        let tuple = space.query(&template);
+        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
+        assert_eq!(7, *tuple.get_field::<i32>(1).unwrap());
+        let x: i64 = 5;
+        let temp2 = create_template!(x.actual(), 7.actual());
+        match space.queryp(&temp2) {
+            Some(_) => {
+                assert!(false, "Should not have found as different data types")
+            }
+            None => assert!(true),
+        }
+    }
+
+    #[test]
+    fn message_test() {
+        let space = Space::new_sequential();
+        let m = Message {
+            action: MessageType::Put,
+            source: 4000,
+            target: String::from("space"),
+            tuple: new_tuple!(5, 'b'),
+            template: create_template!(),
+        };
+        let m_json = serde_json::to_string(&m).expect("should be able to");
+        let m_from_json: Message = serde_json::from_str(&m_json).expect("please");
+        assert_eq!(m_from_json.action, MessageType::Put);
+        assert_eq!(m_from_json.source, 4000);
+        assert_eq!(m_from_json.target, String::from("space"));
+        let tuple = m_from_json.tuple;
+        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
+        assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
+        space.put(tuple);
+        let m = Message {
+            action: MessageType::Get,
+            source: 4000,
+            target: String::from("space"),
+            tuple: new_tuple!(),
+            template: create_template!(5.actual(), 'a'.formal()),
+        };
+        let m_json = serde_json::to_string(&m).expect("should be able to");
+        let m_from_json: Message = serde_json::from_str(&m_json).expect("please");
+        assert_eq!(m_from_json.action, MessageType::Get);
+        assert_eq!(m_from_json.source, 4000);
+        assert_eq!(m_from_json.target, String::from("space"));
+        let template = m_from_json.template;
+        let tuple = space.get(&template);
+        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
+        assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
     }
 }

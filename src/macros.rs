@@ -13,6 +13,19 @@ macro_rules! space_put {
 }
 
 #[macro_export]
+macro_rules! new_tuple {
+    ( $( $x:expr ),* ) => {
+        {
+            let mut temp_vec : Vec<Box<dyn TupleField>> = Vec::new();
+            $(
+                temp_vec.push(Box::new($x));
+            )*
+            Tuple::new(temp_vec)
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! create_template {
     ( $( $x:expr ),* ) => {
         {

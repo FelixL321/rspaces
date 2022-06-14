@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    io::Repeat,
     net::SocketAddr,
     sync::{Arc, Mutex},
 };
@@ -24,6 +25,10 @@ impl Repository {
     }
     pub fn get_space(&self, name: String) -> Option<Arc<Space>> {
         let s = self.spaces.lock().unwrap();
+        println!("get space name: {}", name);
+        for key in s.keys() {
+            println!("spaces: ({})", key);
+        }
         match s.get(&name) {
             Some(s) => Some(Arc::clone(s)),
             None => None,
@@ -33,10 +38,9 @@ impl Repository {
         let mut s = self.spaces.lock().unwrap();
         s.remove_entry(&name);
     }
-    pub fn new_gate(self, name: String, addr: SocketAddr) -> std::io::Result<()> {
-        let arcself = Arc::new(self);
-        let clone = Arc::clone(&arcself);
-        let mut gates = (*arcself).gates.lock().unwrap();
+    pub fn add_gate(repo: Arc<Repository>, name: String, addr: SocketAddr) -> std::io::Result<()> {
+        let clone = Arc::clone(&repo);
+        let mut gates = repo.gates.lock().unwrap();
         match Gate::new_gate(addr, clone) {
             Ok(gate) => {
                 gates.insert(name, gate);
@@ -44,5 +48,12 @@ impl Repository {
             }
             Err(e) => Err(e),
         }
+    }
+
+    pub fn close_gate(&self, name: String) {
+        let mut gates = self.gates.lock().unwrap();
+        let gate = gates.get(&name).unwrap();
+        let sender = gate.handle.lock().unwrap();
+        sender.send(()).unwrap();
     }
 }

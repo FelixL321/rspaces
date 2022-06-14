@@ -7,7 +7,13 @@ mod tests {
         Template, TemplateType, Tuple, TupleField,
     };
     use serde::{Deserialize, Serialize};
-    use std::{any::Any, sync::Arc, thread};
+    use std::{
+        any::Any,
+        io::{Read, Write},
+        net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream},
+        sync::Arc,
+        thread,
+    };
 
     #[test]
     fn anytest() {
@@ -502,7 +508,6 @@ mod tests {
         let m = Message {
             action: MessageType::Put,
             source: 4000,
-            target: String::from("space"),
             tuple: new_tuple!(5, 'b'),
             template: create_template!(),
         };
@@ -510,7 +515,6 @@ mod tests {
         let m_from_json: Message = serde_json::from_str(&m_json).expect("please");
         assert_eq!(m_from_json.action, MessageType::Put);
         assert_eq!(m_from_json.source, 4000);
-        assert_eq!(m_from_json.target, String::from("space"));
         let tuple = m_from_json.tuple;
         assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
         assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
@@ -518,7 +522,6 @@ mod tests {
         let m = Message {
             action: MessageType::Get,
             source: 4000,
-            target: String::from("space"),
             tuple: new_tuple!(),
             template: create_template!(5.actual(), 'a'.formal()),
         };
@@ -526,10 +529,60 @@ mod tests {
         let m_from_json: Message = serde_json::from_str(&m_json).expect("please");
         assert_eq!(m_from_json.action, MessageType::Get);
         assert_eq!(m_from_json.source, 4000);
-        assert_eq!(m_from_json.target, String::from("space"));
         let template = m_from_json.template;
         let tuple = space.get(&template);
         assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
         assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
+    }
+
+    #[test]
+    fn gate() {
+        let repo = Arc::new(Repository::new());
+        let space = Arc::new(Space::new_sequential());
+        repo.add_space(String::from("space"), Arc::clone(&space));
+        thread::spawn(move || match TcpStream::connect("localhost:3800") {
+            Ok(mut stream) => {
+                let m = Message {
+                    action: MessageType::Get,
+                    source: 0,
+                    tuple: new_tuple!(),
+                    template: create_template!(5.actual(), 'b'.formal()),
+                };
+                let m_json = serde_json::to_string(&m).unwrap();
+                let mut buffer = [0; 1024];
+                let spacetext = "space".as_bytes();
+                stream.write(spacetext).unwrap();
+                stream.flush();
+                let n = stream.read(&mut buffer).unwrap();
+                let inc_string = String::from_utf8_lossy(&buffer[..n]);
+                assert_eq!("ok", inc_string);
+                stream.write(m_json.as_bytes()).unwrap();
+
+                let n = stream.read(&mut buffer).unwrap();
+                let inc_string = String::from_utf8_lossy(&buffer[..n]);
+                let message = serde_json::from_str::<Message>(&inc_string).unwrap();
+                assert_eq!(5, *message.tuple.get_field::<i32>(0).unwrap());
+                assert_eq!('b', *message.tuple.get_field::<char>(1).unwrap());
+            }
+            Err(e) => {
+                assert!(false, "{}", e);
+            }
+        });
+        space_put!(space, (5, 'b'));
+        Repository::add_gate(
+            repo,
+            String::from("gate"),
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3800),
+        )
+        .expect("could not connect");
+        loop {
+            let q = create_template!(5.actual(), 'b'.formal());
+            let t = match space.queryp(&q) {
+                Some(t) => t,
+                None => break,
+            };
+            assert_eq!(5, *t.get_field::<i32>(0).unwrap());
+            assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        }
     }
 }

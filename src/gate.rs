@@ -11,7 +11,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{create_template, Repository, Space, Template, Tuple};
+use crate::{create_template, space::Space, LocalSpace, Repository, Template, Tuple};
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 pub enum MessageType {
@@ -111,7 +111,7 @@ impl Gate {
 struct Connection {
     signal: Receiver<()>,
     stream: TcpStream,
-    space: Arc<Space>,
+    space: Arc<LocalSpace>,
 }
 
 impl Connection {

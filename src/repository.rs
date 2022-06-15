@@ -5,10 +5,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{gate::Gate, Space};
+use crate::{gate::Gate, LocalSpace};
 
 pub struct Repository {
-    spaces: Mutex<HashMap<String, Arc<Space>>>,
+    spaces: Mutex<HashMap<String, Arc<LocalSpace>>>,
     gates: Mutex<HashMap<String, Arc<Gate>>>,
 }
 
@@ -19,11 +19,11 @@ impl Repository {
             gates: Mutex::new(HashMap::new()),
         }
     }
-    pub fn add_space(&self, name: String, space: Arc<Space>) {
+    pub fn add_space(&self, name: String, space: Arc<LocalSpace>) {
         let mut s = self.spaces.lock().unwrap();
         s.insert(name, space);
     }
-    pub fn get_space(&self, name: String) -> Option<Arc<Space>> {
+    pub fn get_space(&self, name: String) -> Option<Arc<LocalSpace>> {
         let s = self.spaces.lock().unwrap();
         println!("get space name: {}", name);
         for key in s.keys() {

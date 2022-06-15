@@ -10,6 +10,183 @@ use crate::drain_filter::drain_filter;
 use crate::Template;
 use crate::Tuple;
 
+pub trait Space {
+    /**
+    Finds a tuple matching the template in the space, removes it from the space and returns it.
+
+    Will block the current thread until a tuple is found
+
+    # Example
+    ```
+    # use rspaces::*;
+    # let space = Space::new_sequential();
+    //Put the tuple (5, 'a') in the space
+    space_put!(space, (5, 'a'));
+
+    // Create a query template for the tuple with a 5 followed by a char
+    let template = create_template!(5.actual(), char::formal());
+
+    //Query the space for the tuple
+    let tuple = space.get(&template);
+
+    assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
+    assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
+
+    ```
+    */
+    fn get(&self, template: &Template) -> Tuple;
+    /**
+    Finds a tuple matching the template in the space, removes it from the space and returns it.
+
+    This does not blcok the current thread and therefore returns an option, as theres no garantuee for finding a tuple
+
+    # Example
+    ```
+    # use rspaces::*;
+    # let space = Space::new_sequential();
+    //Put the tuple (5, 'a') in the space
+    space_put!(space, (5, 'a'));
+
+    // Create a query template for the tuple with a 5 followed by a char
+    let template = create_template!(5.actual(), char::formal());
+
+    //Query the space for the tuple
+    if let Some(tuple) = space.getp(&template) {
+        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
+        assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
+    } else {
+        assert!(false);
+    }
+
+    ```
+    */
+    fn getp(&self, template: &Template) -> Option<Tuple>;
+
+    /**
+    Puts the given tuple into the tuple space
+    # Example
+    ```
+    # use rspaces::*;
+    # let space = Space::new_sequential();
+    let a = 5;
+    let b = 'b';
+    let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
+    let tuple = Tuple::new(fields);
+    space.put(tuple);
+    ```
+    Alternatively the same can be done with a macro
+    ```
+    # use rspaces::*;
+    # let space = Space::new_sequential();
+    let a = 5;
+    let b = 'b';
+    space_put!(space, (a, b))
+    ```
+    */
+    fn put(&self, tuple: Tuple);
+    /**
+    Finds a tuple matching the template in the space, and returns it without removing it.
+
+    This does not blcok the current thread and therefore returns an option, as theres no garantuee for finding a tuple
+
+    # Example
+    ```
+    # use rspaces::*;
+    # let space = Space::new_sequential();
+    //Put the tuple (5, 'a') in the space
+    space_put!(space, (5, 'a'));
+
+    // Create a query template for the tuple with a 5 followed by a char
+    let template = create_template!(5.actual(), char::formal());
+
+    //Query the space for the tuple
+    if let Some(tuple) = space.queryp(&template) {
+        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
+        assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
+    } else {
+        assert!(false);
+    }
+
+    ```
+    */
+    fn queryp(&self, query: &Template) -> Option<Tuple>;
+
+    /**
+    Finds a tuple matching the template in the space, and returns it without removing it.
+
+    Will block the current thread until a tuple is found
+
+    # Example
+    ```
+    # use rspaces::*;
+    # let space = Space::new_sequential();
+    //Put the tuple (5, 'a') in the space
+    space_put!(space, (5, 'a'));
+
+    // Create a query template for the tuple with a 5 followed by a char
+    let template = create_template!(5.actual(), char::formal());
+
+    //Query the space for the tuple
+    let tuple = space.query(&template);
+
+    assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
+    assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
+
+    ```
+    */
+    fn query(&self, template: &Template) -> Tuple;
+    /**
+    Gets all tuples in the space matching the template and removes them from the space
+    # Example
+    ```
+    # use rspaces::*;
+    # let space = Space::new_sequential();
+    //Put tuples in the space
+    space_put!(space, (5, 'a'));
+    space_put!(space, (4, 'b'));
+    space_put!(space, (4, 'c'));
+
+    // Create a query template for the tuple with a 4 followed by a char
+    let template = create_template!(4.actual(), char::formal());
+
+    //Query the space for all tuples matching
+    let tuples = space.getall(&template);
+
+    assert_eq!(2, tuples.len());
+    for tuple in tuples.iter(){
+        assert_eq!(4, *tuple.get_field::<i32>(0).unwrap());
+    }
+
+    ```
+    */
+    fn getall(&self, template: &Template) -> Vec<Tuple>;
+    /**
+    Gets all tuples in the space matching the template without removing them
+    # Example
+    ```
+    # use rspaces::*;
+    # let space = Space::new_sequential();
+    //Put tuples in the space
+    space_put!(space, (5, 'a'));
+    space_put!(space, (4, 'b'));
+    space_put!(space, (4, 'c'));
+
+    // Create a query template for the tuple with a 4 followed by a char
+    let template = create_template!(4.actual(), char::formal());
+
+    //Query the space for all tuples matching
+    let tuples = space.queryall(&template);
+
+    assert_eq!(2, tuples.len());
+    for tuple in tuples.iter(){
+        assert_eq!(4, *tuple.get_field::<i32>(0).unwrap());
+    }
+
+    ```
+    */
+    fn queryall(&self, template: &Template) -> Vec<Tuple>;
+}
+
 enum SpaceType {
     Sequential,
     Queue,
@@ -42,22 +219,22 @@ assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
 
 ```
 */
-pub struct Space {
+pub struct LocalSpace {
     v: Mutex<Vec<Tuple>>,
     listeners: Mutex<Vec<Sender<bool>>>,
     spacetype: SpaceType,
 }
 
 //Constructors
-impl Space {
+impl LocalSpace {
     /**
     Create a new sequential space
 
     get and query will return the oldest tuple matching the template
 
     */
-    pub fn new_sequential() -> Space {
-        Space {
+    pub fn new_sequential() -> LocalSpace {
+        LocalSpace {
             v: Mutex::new(Vec::new()),
             listeners: Mutex::new(Vec::new()),
             spacetype: SpaceType::Sequential,
@@ -69,8 +246,8 @@ impl Space {
     get and query will return the oldest tuple if it matches the template
 
     */
-    pub fn new_queue() -> Space {
-        Space {
+    pub fn new_queue() -> LocalSpace {
+        LocalSpace {
             v: Mutex::new(Vec::new()),
             listeners: Mutex::new(Vec::new()),
             spacetype: SpaceType::Queue,
@@ -82,8 +259,8 @@ impl Space {
     get and query will return the newest tuple if it matcehs the template
 
     */
-    pub fn new_stack() -> Space {
-        Space {
+    pub fn new_stack() -> LocalSpace {
+        LocalSpace {
             v: Mutex::new(Vec::new()),
             listeners: Mutex::new(Vec::new()),
             spacetype: SpaceType::Stack,
@@ -95,8 +272,8 @@ impl Space {
     get and query will return the newest tuple matching the template
 
     */
-    pub fn new_pile() -> Space {
-        Space {
+    pub fn new_pile() -> LocalSpace {
+        LocalSpace {
             v: Mutex::new(Vec::new()),
             listeners: Mutex::new(Vec::new()),
             spacetype: SpaceType::Pile,
@@ -108,148 +285,12 @@ impl Space {
     get and query will return a random tuple matching the template
 
     */
-    pub fn new_random() -> Space {
-        Space {
+    pub fn new_random() -> LocalSpace {
+        LocalSpace {
             v: Mutex::new(Vec::new()),
             listeners: Mutex::new(Vec::new()),
             spacetype: SpaceType::Random,
         }
-    }
-}
-
-//API
-impl Space {
-    /**
-    Finds a tuple matching the template in the space, removes it from the space and returns it.
-
-    Will block the current thread until a tuple is found
-
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put the tuple (5, 'a') in the space
-    space_put!(space, (5, 'a'));
-
-    // Create a query template for the tuple with a 5 followed by a char
-    let template = create_template!(5.actual(), char::formal());
-
-    //Query the space for the tuple
-    let tuple = space.get(&template);
-
-    assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-    assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
-
-    ```
-    */
-    pub fn get(&self, template: &Template) -> Tuple {
-        loop {
-            match self.getp(&template) {
-                Some(t) => return t,
-                None => {
-                    let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
-                    {
-                        let mut l = self.listeners.lock().unwrap();
-                        l.push(tx);
-                    }
-                    let _ = rx.recv();
-                }
-            };
-        }
-    }
-    /**
-    Finds a tuple matching the template in the space, removes it from the space and returns it.
-
-    This does not blcok the current thread and therefore returns an option, as theres no garantuee for finding a tuple
-
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put the tuple (5, 'a') in the space
-    space_put!(space, (5, 'a'));
-
-    // Create a query template for the tuple with a 5 followed by a char
-    let template = create_template!(5.actual(), char::formal());
-
-    //Query the space for the tuple
-    if let Some(tuple) = space.getp(&template) {
-        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-        assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
-    } else {
-        assert!(false);
-    }
-
-    ```
-    */
-    pub fn getp(&self, template: &Template) -> Option<Tuple> {
-        self.look(template, true)
-    }
-
-    /**
-    Puts the given tuple into the tuple space
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    let a = 5;
-    let b = 'b';
-    let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
-    let tuple = Tuple::new(fields);
-    space.put(tuple);
-    ```
-    Alternatively the same can be done with a macro
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    let a = 5;
-    let b = 'b';
-    space_put!(space, (a, b))
-    ```
-    */
-    pub fn put(&self, tuple: Tuple) {
-        let mut v = self.v.lock().unwrap();
-        v.push(tuple);
-        let mut l = self.listeners.lock().unwrap();
-        let mut remove = Vec::new();
-        for i in 0..l.len() {
-            let tx = l.get(i).unwrap();
-            match tx.send(true) {
-                Err(e) => panic!("panic: {:?}", e),
-                Ok(_) => remove.push(i),
-            }
-        }
-        for i in remove.iter() {
-            l.remove(*i);
-        }
-    }
-    /**
-    Finds a tuple matching the template in the space, and returns it without removing it.
-
-    This does not blcok the current thread and therefore returns an option, as theres no garantuee for finding a tuple
-
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put the tuple (5, 'a') in the space
-    space_put!(space, (5, 'a'));
-
-    // Create a query template for the tuple with a 5 followed by a char
-    let template = create_template!(5.actual(), char::formal());
-
-    //Query the space for the tuple
-    if let Some(tuple) = space.queryp(&template) {
-        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-        assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
-    } else {
-        assert!(false);
-    }
-
-    ```
-    */
-    pub fn queryp(&self, query: &Template) -> Option<Tuple> {
-        self.look(query, false)
     }
 
     fn look(&self, query: &Template, destroy: bool) -> Option<Tuple> {
@@ -301,31 +342,52 @@ impl Space {
             }
         }
     }
+}
 
-    /**
-    Finds a tuple matching the template in the space, and returns it without removing it.
+//API
+impl Space for LocalSpace {
+    fn get(&self, template: &Template) -> Tuple {
+        loop {
+            match self.getp(&template) {
+                Some(t) => return t,
+                None => {
+                    let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
+                    {
+                        let mut l = self.listeners.lock().unwrap();
+                        l.push(tx);
+                    }
+                    let _ = rx.recv();
+                }
+            };
+        }
+    }
 
-    Will block the current thread until a tuple is found
+    fn getp(&self, template: &Template) -> Option<Tuple> {
+        self.look(template, true)
+    }
 
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put the tuple (5, 'a') in the space
-    space_put!(space, (5, 'a'));
+    fn put(&self, tuple: Tuple) {
+        let mut v = self.v.lock().unwrap();
+        v.push(tuple);
+        let mut l = self.listeners.lock().unwrap();
+        let mut remove = Vec::new();
+        for i in 0..l.len() {
+            let tx = l.get(i).unwrap();
+            match tx.send(true) {
+                Err(e) => panic!("panic: {:?}", e),
+                Ok(_) => remove.push(i),
+            }
+        }
+        for i in remove.iter() {
+            l.remove(*i);
+        }
+    }
 
-    // Create a query template for the tuple with a 5 followed by a char
-    let template = create_template!(5.actual(), char::formal());
+    fn queryp(&self, query: &Template) -> Option<Tuple> {
+        self.look(query, false)
+    }
 
-    //Query the space for the tuple
-    let tuple = space.query(&template);
-
-    assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-    assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
-
-    ```
-    */
-    pub fn query(&self, template: &Template) -> Tuple {
+    fn query(&self, template: &Template) -> Tuple {
         loop {
             match self.queryp(&template) {
                 Some(t) => return t,
@@ -340,59 +402,13 @@ impl Space {
             };
         }
     }
-    /**
-    Gets all tuples in the space matching the template and removes them from the space
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put tuples in the space
-    space_put!(space, (5, 'a'));
-    space_put!(space, (4, 'b'));
-    space_put!(space, (4, 'c'));
 
-    // Create a query template for the tuple with a 4 followed by a char
-    let template = create_template!(4.actual(), char::formal());
-
-    //Query the space for all tuples matching
-    let tuples = space.getall(&template);
-
-    assert_eq!(2, tuples.len());
-    for tuple in tuples.iter(){
-        assert_eq!(4, *tuple.get_field::<i32>(0).unwrap());
-    }
-
-    ```
-    */
-    pub fn getall(&self, template: &Template) -> Vec<Tuple> {
+    fn getall(&self, template: &Template) -> Vec<Tuple> {
         let mut v = self.v.lock().unwrap();
         drain_filter(&mut v, |t| template.query(t)).collect::<Vec<_>>()
     }
-    /**
-    Gets all tuples in the space matching the template without removing them
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put tuples in the space
-    space_put!(space, (5, 'a'));
-    space_put!(space, (4, 'b'));
-    space_put!(space, (4, 'c'));
 
-    // Create a query template for the tuple with a 4 followed by a char
-    let template = create_template!(4.actual(), char::formal());
-
-    //Query the space for all tuples matching
-    let tuples = space.queryall(&template);
-
-    assert_eq!(2, tuples.len());
-    for tuple in tuples.iter(){
-        assert_eq!(4, *tuple.get_field::<i32>(0).unwrap());
-    }
-
-    ```
-    */
-    pub fn queryall(&self, template: &Template) -> Vec<Tuple> {
+    fn queryall(&self, template: &Template) -> Vec<Tuple> {
         let v = self.v.lock().unwrap();
         let viter = v.iter().filter(|t| template.query(t));
         let mut res = Vec::new();

@@ -3,8 +3,8 @@ mod tests {
     use core::time;
     use rspace_macro::TupleField;
     use rspaces::{
-        create_template, new_tuple, space_put, FieldType, Message, MessageType, Repository, Space,
-        Template, TemplateType, Tuple, TupleField,
+        create_template, new_tuple, space_put, FieldType, LocalSpace, Message, MessageType,
+        Repository, Space, Template, TemplateType, Tuple, TupleField,
     };
     use serde::{Deserialize, Serialize};
     use std::{
@@ -50,7 +50,7 @@ mod tests {
 
     #[test]
     fn space_search() {
-        let space = Space::new_sequential();
+        let space = LocalSpace::new_sequential();
         let a: i32 = 5;
         let b = 'b';
         let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
@@ -64,7 +64,7 @@ mod tests {
 
     #[test]
     fn space_search_failing() {
-        let space = Space::new_sequential();
+        let space = LocalSpace::new_sequential();
         let a = 5;
         let b = 'b';
         let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
@@ -81,7 +81,7 @@ mod tests {
     }
     #[test]
     fn multithread() {
-        let sender = Arc::new(Space::new_sequential());
+        let sender = Arc::new(LocalSpace::new_sequential());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
             let a = 5;
@@ -99,7 +99,7 @@ mod tests {
 
     #[test]
     fn multithread_nonblock() {
-        let sender = Arc::new(Space::new_sequential());
+        let sender = Arc::new(LocalSpace::new_sequential());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
             let a = 5;
@@ -123,7 +123,7 @@ mod tests {
 
     #[test]
     fn multithread_query() {
-        let sender = Arc::new(Space::new_sequential());
+        let sender = Arc::new(LocalSpace::new_sequential());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
             let a = 5;
@@ -139,7 +139,7 @@ mod tests {
     }
     #[test]
     fn multithread_query_nonblock() {
-        let sender = Arc::new(Space::new_sequential());
+        let sender = Arc::new(LocalSpace::new_sequential());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
             let a = 5;
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn getall() {
-        let sender = Arc::new(Space::new_sequential());
+        let sender = Arc::new(LocalSpace::new_sequential());
         let reciever = Arc::clone(&sender);
         let handle = thread::spawn(move || {
             let a = 5;
@@ -195,7 +195,7 @@ mod tests {
 
     #[test]
     fn queryall() {
-        let sender = Arc::new(Space::new_sequential());
+        let sender = Arc::new(LocalSpace::new_sequential());
         let reciever = Arc::clone(&sender);
         let handle = thread::spawn(move || {
             let a = 5;
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn macro_test() {
-        let space = Space::new_sequential();
+        let space = LocalSpace::new_sequential();
         space_put!(space, (5, 'b'));
         let q = create_template!(5.actual(), 'a'.formal());
         let t = space.get(&q);
@@ -234,7 +234,7 @@ mod tests {
 
     #[test]
     fn ordering_sequential() {
-        let sender = Arc::new(Space::new_pile());
+        let sender = Arc::new(LocalSpace::new_pile());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
             space_put!(sender, ('a', 'b'));
@@ -255,7 +255,7 @@ mod tests {
 
     #[test]
     fn ordering_queue() {
-        let sender = Arc::new(Space::new_queue());
+        let sender = Arc::new(LocalSpace::new_queue());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
             space_put!(sender, (5, 'b'));
@@ -284,7 +284,7 @@ mod tests {
 
     #[test]
     fn ordering_stack() {
-        let sender = Arc::new(Space::new_stack());
+        let sender = Arc::new(LocalSpace::new_stack());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
             space_put!(sender, (4, 'b'));
@@ -312,7 +312,7 @@ mod tests {
 
     #[test]
     fn ordering_pile() {
-        let sender = Arc::new(Space::new_pile());
+        let sender = Arc::new(LocalSpace::new_pile());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
             space_put!(sender, (4, 'b'));
@@ -334,8 +334,8 @@ mod tests {
     #[test]
     fn repository() {
         let repo = Arc::new(Repository::new());
-        let space1 = Arc::new(Space::new_sequential());
-        let space2 = Arc::new(Space::new_sequential());
+        let space1 = Arc::new(LocalSpace::new_sequential());
+        let space2 = Arc::new(LocalSpace::new_sequential());
         repo.add_space(String::from("space1"), Arc::clone(&space1));
         repo.add_space(String::from("space2"), Arc::clone(&space2));
         let repoarc = Arc::clone(&repo);
@@ -364,9 +364,9 @@ mod tests {
     fn multiple_repository() {
         let repo1 = Arc::new(Repository::new());
         let repo2 = Arc::new(Repository::new());
-        let space1 = Arc::new(Space::new_sequential());
-        let space2 = Arc::new(Space::new_sequential());
-        let space3 = Arc::new(Space::new_sequential());
+        let space1 = Arc::new(LocalSpace::new_sequential());
+        let space2 = Arc::new(LocalSpace::new_sequential());
+        let space3 = Arc::new(LocalSpace::new_sequential());
         repo1.add_space(String::from("space1"), Arc::clone(&space1));
         repo1.add_space(String::from("space2"), Arc::clone(&space2));
         repo2.add_space(String::from("space2"), Arc::clone(&space2));
@@ -418,8 +418,8 @@ mod tests {
     #[test]
     fn repository_delete() {
         let repo = Arc::new(Repository::new());
-        let space1 = Arc::new(Space::new_sequential());
-        let space2 = Arc::new(Space::new_sequential());
+        let space1 = Arc::new(LocalSpace::new_sequential());
+        let space2 = Arc::new(LocalSpace::new_sequential());
         repo.add_space(String::from("space1"), Arc::clone(&space1));
         repo.add_space(String::from("space2"), Arc::clone(&space2));
         repo.del_space(String::from("space1"));
@@ -468,7 +468,7 @@ mod tests {
 
     #[test]
     fn seri_test_template() {
-        let space = Space::new_sequential();
+        let space = LocalSpace::new_sequential();
         let a = 5;
         let b = 'b';
         let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
@@ -486,7 +486,7 @@ mod tests {
 
     #[test]
     fn typing_test() {
-        let space = Space::new_sequential();
+        let space = LocalSpace::new_sequential();
         space_put!(space, (5, 7));
         let template = create_template!(5.actual(), 7.actual());
         let tuple = space.query(&template);
@@ -504,7 +504,7 @@ mod tests {
 
     #[test]
     fn message_test() {
-        let space = Space::new_sequential();
+        let space = LocalSpace::new_sequential();
         let m = Message {
             action: MessageType::Put,
             source: 4000,
@@ -538,7 +538,7 @@ mod tests {
     #[test]
     fn gate() {
         let repo = Arc::new(Repository::new());
-        let space = Arc::new(Space::new_sequential());
+        let space = Arc::new(LocalSpace::new_sequential());
         repo.add_space(String::from("space"), Arc::clone(&space));
         thread::spawn(move || match TcpStream::connect("localhost:3800") {
             Ok(mut stream) => {
@@ -552,7 +552,7 @@ mod tests {
                 let mut buffer = [0; 1024];
                 let spacetext = "space".as_bytes();
                 stream.write(spacetext).unwrap();
-                stream.flush();
+                stream.flush().expect("should flush");
                 let n = stream.read(&mut buffer).unwrap();
                 let inc_string = String::from_utf8_lossy(&buffer[..n]);
                 assert_eq!("ok", inc_string);

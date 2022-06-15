@@ -55,9 +55,9 @@ mod tests {
         let b = 'b';
         let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
         let tuple = Tuple::new(fields);
-        space.put(tuple);
+        space.put(tuple).unwrap();
         let q = create_template!(5.actual(), 'a'.formal());
-        let t = space.get(&q);
+        let t = space.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
     }
@@ -69,11 +69,11 @@ mod tests {
         let b = 'b';
         let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
         let tuple = Tuple::new(fields);
-        space.put(tuple);
+        space.put(tuple).unwrap();
         let mut q = Template::new();
         q.fields.push(5.actual());
         q.fields.push(true.formal());
-        if let Some(_t) = space.getp(&q) {
+        if let Ok(_t) = space.getp(q) {
             assert!(false, "We found touple and we should not");
         } else {
             assert!(true);
@@ -88,11 +88,11 @@ mod tests {
             let b = 'b';
             let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
             let tuple = Tuple::new(fields);
-            sender.put(tuple);
+            sender.put(tuple).unwrap();
         });
 
         let q = create_template!(5.actual(), 'a'.formal());
-        let t = reciever.get(&q);
+        let t = reciever.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
     }
@@ -106,14 +106,14 @@ mod tests {
             let b = 'b';
             let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
             let tuple = Tuple::new(fields);
-            sender.put(tuple);
+            sender.put(tuple).unwrap();
         });
 
         let mut q = Template::new();
         q.fields.push(5.actual());
         q.fields.push('a'.formal());
         loop {
-            if let Some(t) = reciever.getp(&q) {
+            if let Ok(t) = reciever.getp(q.clone()) {
                 assert_eq!(5, *t.get_field::<i32>(0).unwrap());
                 assert_eq!('b', *t.get_field::<char>(1).unwrap());
                 return;
@@ -129,11 +129,11 @@ mod tests {
             let a = 5;
             let b = 'b';
             let tuple = Tuple::new(vec![Box::new(a), Box::new(b)]);
-            sender.put(tuple);
+            sender.put(tuple).unwrap();
         });
 
         let q = create_template!(5.actual(), 'a'.formal());
-        let t = reciever.query(&q);
+        let t = reciever.query(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
     }
@@ -146,7 +146,7 @@ mod tests {
             let b = 'b';
             let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
             let tuple = Tuple::new(fields);
-            sender.put(tuple);
+            sender.put(tuple).unwrap();
         });
 
         let mut q = Template::new();
@@ -155,7 +155,7 @@ mod tests {
         let mut c = 0;
         loop {
             c += 1;
-            if let Some(t) = reciever.queryp(&q) {
+            if let Ok(t) = reciever.queryp(q.clone()) {
                 assert_eq!(5, *t.get_field::<i32>(0).unwrap());
                 assert_eq!('b', *t.get_field::<char>(1).unwrap());
                 println!("{}", c);
@@ -173,18 +173,18 @@ mod tests {
             let b = 'b';
             let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
             let tuple = Tuple::new(fields);
-            sender.put(tuple);
+            sender.put(tuple).unwrap();
             let a = 5;
             let b = 'c';
             let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
             let tuple = Tuple::new(fields);
-            sender.put(tuple);
+            sender.put(tuple).unwrap();
         });
         handle.join().expect("thread didnt join");
         let mut q = Template::new();
         q.fields.push(5.actual());
         q.fields.push('a'.formal());
-        let tvec = reciever.getall(&q);
+        let tvec = reciever.getall(q).unwrap();
         let t = tvec.get(0).expect("should be touple");
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -202,18 +202,18 @@ mod tests {
             let b = 'b';
             let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
             let tuple = Tuple::new(fields);
-            sender.put(tuple);
+            sender.put(tuple).unwrap();
             let a = 5;
             let b = 'c';
             let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
             let tuple = Tuple::new(fields);
-            sender.put(tuple);
+            sender.put(tuple).unwrap();
         });
         handle.join().expect("thread didnt join");
         let mut q = Template::new();
         q.fields.push(5.actual());
         q.fields.push('b'.formal());
-        let tvec = reciever.queryall(&q);
+        let tvec = reciever.queryall(q).unwrap();
         let t = tvec.get(0).expect("should be touple");
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -227,7 +227,7 @@ mod tests {
         let space = LocalSpace::new_sequential();
         space_put!(space, (5, 'b'));
         let q = create_template!(5.actual(), 'a'.formal());
-        let t = space.get(&q);
+        let t = space.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
     }
@@ -243,12 +243,12 @@ mod tests {
         });
 
         let q = create_template!(5.actual(), 'a'.formal());
-        let t = reciever.get(&q);
+        let t = reciever.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
         let q = create_template!(4.actual(), 'a'.formal());
-        let t = reciever.get(&q);
+        let t = reciever.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
     }
@@ -265,19 +265,19 @@ mod tests {
         let ten_millis = time::Duration::from_millis(100);
         thread::sleep(ten_millis);
         let q = create_template!(4.actual(), 'a'.formal());
-        if let Some(_t) = reciever.getp(&q) {
+        if let Ok(_t) = reciever.getp(q) {
             assert!(false, "Found tuple and should not")
         } else {
             assert!(true);
         }
 
         let q = create_template!(5.actual(), 'a'.formal());
-        let t = reciever.get(&q);
+        let t = reciever.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
         let q = create_template!(4.actual(), 'a'.formal());
-        let t = reciever.get(&q);
+        let t = reciever.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
     }
@@ -294,18 +294,18 @@ mod tests {
         let ten_millis = time::Duration::from_millis(100);
         thread::sleep(ten_millis);
         let q = create_template!(4.actual(), 'a'.formal());
-        if let Some(_t) = reciever.getp(&q) {
+        if let Ok(_t) = reciever.getp(q) {
             assert!(false, "Found tuple and should not")
         } else {
             assert!(true);
         }
         let q = create_template!(5.actual(), 'a'.formal());
-        let t = reciever.get(&q);
+        let t = reciever.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
         let q = create_template!(4.actual(), 'a'.formal());
-        let t = reciever.get(&q);
+        let t = reciever.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
     }
@@ -321,12 +321,12 @@ mod tests {
         });
 
         let q = create_template!(5.actual(), 'a'.formal());
-        let t = reciever.get(&q);
+        let t = reciever.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
         let q = create_template!(4.actual(), 'a'.formal());
-        let t = reciever.get(&q);
+        let t = reciever.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
     }
@@ -350,12 +350,12 @@ mod tests {
             space_put!(space2, (5, 'b'));
         });
         let q = create_template!(5.actual(), 'a'.formal());
-        let t = space2.get(&q);
+        let t = space2.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
         let q = create_template!(4.actual(), 'a'.formal());
-        let t = space1.get(&q);
+        let t = space1.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
     }
@@ -395,22 +395,22 @@ mod tests {
         });
 
         let q = create_template!(4.actual(), 'a'.formal());
-        let t = space2.get(&q);
+        let t = space2.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
         let q = create_template!(5.actual(), 'a'.formal());
-        let t = space2.get(&q);
+        let t = space2.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
         let q = create_template!(4.actual(), 'a'.formal());
-        let t = space1.get(&q);
+        let t = space1.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
         let q = create_template!(5.actual(), 'a'.formal());
-        let t = space3.get(&q);
+        let t = space3.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
     }
@@ -473,13 +473,13 @@ mod tests {
         let b = 'b';
         let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
         let tuple = Tuple::new(fields);
-        space.put(tuple);
+        space.put(tuple).unwrap();
         let q = create_template!(5.actual(), 'a'.formal());
         let q_json = serde_json::to_string(&q).unwrap();
         print!("{}", q_json);
         let template: Template = serde_json::from_str(&q_json).unwrap();
 
-        let t = space.get(&template);
+        let t = space.get(template).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
     }
@@ -489,16 +489,16 @@ mod tests {
         let space = LocalSpace::new_sequential();
         space_put!(space, (5, 7));
         let template = create_template!(5.actual(), 7.actual());
-        let tuple = space.query(&template);
+        let tuple = space.query(template).unwrap();
         assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
         assert_eq!(7, *tuple.get_field::<i32>(1).unwrap());
         let x: i64 = 5;
         let temp2 = create_template!(x.actual(), 7.actual());
-        match space.queryp(&temp2) {
-            Some(_) => {
+        match space.queryp(temp2) {
+            Ok(_) => {
                 assert!(false, "Should not have found as different data types")
             }
-            None => assert!(true),
+            Err(_) => assert!(true),
         }
     }
 
@@ -507,30 +507,26 @@ mod tests {
         let space = LocalSpace::new_sequential();
         let m = Message {
             action: MessageType::Put,
-            source: 4000,
             tuple: new_tuple!(5, 'b'),
             template: create_template!(),
         };
         let m_json = serde_json::to_string(&m).expect("should be able to");
         let m_from_json: Message = serde_json::from_str(&m_json).expect("please");
         assert_eq!(m_from_json.action, MessageType::Put);
-        assert_eq!(m_from_json.source, 4000);
         let tuple = m_from_json.tuple;
         assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
         assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
-        space.put(tuple);
+        space.put(tuple).unwrap();
         let m = Message {
             action: MessageType::Get,
-            source: 4000,
             tuple: new_tuple!(),
             template: create_template!(5.actual(), 'a'.formal()),
         };
         let m_json = serde_json::to_string(&m).expect("should be able to");
         let m_from_json: Message = serde_json::from_str(&m_json).expect("please");
         assert_eq!(m_from_json.action, MessageType::Get);
-        assert_eq!(m_from_json.source, 4000);
         let template = m_from_json.template;
-        let tuple = space.get(&template);
+        let tuple = space.get(template).unwrap();
         assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
         assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
     }
@@ -544,7 +540,6 @@ mod tests {
             Ok(mut stream) => {
                 let m = Message {
                     action: MessageType::Get,
-                    source: 0,
                     tuple: new_tuple!(),
                     template: create_template!(5.actual(), 'b'.formal()),
                 };
@@ -555,7 +550,7 @@ mod tests {
                 stream.flush().expect("should flush");
                 let n = stream.read(&mut buffer).unwrap();
                 let inc_string = String::from_utf8_lossy(&buffer[..n]);
-                assert_eq!("ok", inc_string);
+                assert_eq!("t", inc_string);
                 stream.write(m_json.as_bytes()).unwrap();
 
                 let n = stream.read(&mut buffer).unwrap();
@@ -577,9 +572,9 @@ mod tests {
         .expect("could not connect");
         loop {
             let q = create_template!(5.actual(), 'b'.formal());
-            let t = match space.queryp(&q) {
-                Some(t) => t,
-                None => break,
+            let t = match space.queryp(q) {
+                Ok(t) => t,
+                Err(_) => break,
             };
             assert_eq!(5, *t.get_field::<i32>(0).unwrap());
             assert_eq!('b', *t.get_field::<char>(1).unwrap());

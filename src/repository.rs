@@ -1,14 +1,13 @@
 use std::{
     collections::HashMap,
-    io::Repeat,
     net::SocketAddr,
     sync::{Arc, Mutex},
 };
 
-use crate::{gate::Gate, LocalSpace};
+use crate::{gate::Gate, Space};
 
 pub struct Repository {
-    spaces: Mutex<HashMap<String, Arc<LocalSpace>>>,
+    spaces: Mutex<HashMap<String, Arc<dyn Space>>>,
     gates: Mutex<HashMap<String, Arc<Gate>>>,
 }
 
@@ -19,11 +18,11 @@ impl Repository {
             gates: Mutex::new(HashMap::new()),
         }
     }
-    pub fn add_space(&self, name: String, space: Arc<LocalSpace>) {
+    pub fn add_space<T: Space + 'static>(&self, name: String, space: Arc<T>) {
         let mut s = self.spaces.lock().unwrap();
         s.insert(name, space);
     }
-    pub fn get_space(&self, name: String) -> Option<Arc<LocalSpace>> {
+    pub fn get_space(&self, name: String) -> Option<Arc<dyn Space>> {
         let s = self.spaces.lock().unwrap();
         println!("get space name: {}", name);
         for key in s.keys() {
@@ -51,7 +50,7 @@ impl Repository {
     }
 
     pub fn close_gate(&self, name: String) {
-        let mut gates = self.gates.lock().unwrap();
+        let gates = self.gates.lock().unwrap();
         let gate = gates.get(&name).unwrap();
         let sender = gate.handle.lock().unwrap();
         sender.send(()).unwrap();

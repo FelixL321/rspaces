@@ -11,7 +11,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{create_template, space::Space, LocalSpace, Repository, Template, Tuple};
+use crate::{create_template, space::Space, Repository, Template, Tuple};
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 pub enum MessageType {
@@ -26,7 +26,6 @@ pub enum MessageType {
 #[derive(Serialize, Deserialize)]
 pub struct Message {
     pub action: MessageType,
-    pub source: u32,
     pub tuple: Tuple,
     pub template: Template,
 }
@@ -70,14 +69,20 @@ impl Gate {
                                 let inc_string = String::from_utf8_lossy(&buffer[..n]);
                                 space_string = inc_string.to_string();
                             }
-                            Err(_) => todo!(),
+                            Err(_) => {
+                                s.write("f".as_bytes()).unwrap();
+                                continue;
+                            }
                         }
                         let space = match gate.repo.get_space(space_string) {
                             Some(space) => {
-                                s.write("ok".as_bytes()).unwrap();
+                                s.write("t".as_bytes()).unwrap();
                                 space
                             }
-                            None => todo!(),
+                            None => {
+                                s.write("f".as_bytes()).unwrap();
+                                continue;
+                            }
                         };
                         let mut c = Connection {
                             signal: rx,
@@ -100,9 +105,9 @@ impl Gate {
                     Err(e) => panic!("encountered IO error: {}", e),
                 }
             }
-            let mut cons = gate.connections.lock().unwrap();
+            let cons = gate.connections.lock().unwrap();
             for con in cons.iter() {
-                con.send(());
+                con.send(()).expect("Couldnt shut down threadpool");
             }
         });
     }
@@ -111,7 +116,7 @@ impl Gate {
 struct Connection {
     signal: Receiver<()>,
     stream: TcpStream,
-    space: Arc<LocalSpace>,
+    space: Arc<dyn Space>,
 }
 
 impl Connection {
@@ -132,9 +137,9 @@ impl Connection {
                     let r_json = serde_json::to_string(&response).unwrap();
                     self.stream.write(r_json.as_bytes()).unwrap();
                 }
-                Err(e) if e.kind() == std::io::ErrorKind::TimedOut => todo!(),
-                Err(e) if e.kind() == std::io::ErrorKind::Interrupted => todo!(),
-                Err(e) => todo!(),
+                Err(e) if e.kind() == std::io::ErrorKind::TimedOut => continue,
+                Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+                Err(e) => panic!("{}", e),
             }
         }
     }
@@ -156,10 +161,9 @@ impl Connection {
     }
 
     fn handle_get(&mut self, message: Message) -> Message {
-        let tuple = self.space.get(&message.template);
+        let tuple = self.space.get(message.template).unwrap();
         Message {
             action: MessageType::Get,
-            source: 0,
             tuple,
             template: create_template!(),
         }

@@ -1,3 +1,7 @@
+use std::io::Error;
+use std::io::Read;
+use std::io::Write;
+use std::net::TcpStream;
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
@@ -6,11 +10,17 @@ use std::sync::Mutex;
 use rand::thread_rng;
 use rand::Rng;
 
+use crate::create_template;
 use crate::drain_filter::drain_filter;
+use crate::new_tuple;
+use crate::FieldType;
+use crate::Message;
+use crate::MessageType;
 use crate::Template;
 use crate::Tuple;
+use crate::TupleField;
 
-pub trait Space {
+pub trait Space: Send + Sync {
     /**
     Finds a tuple matching the template in the space, removes it from the space and returns it.
 
@@ -34,7 +44,7 @@ pub trait Space {
 
     ```
     */
-    fn get(&self, template: &Template) -> Tuple;
+    fn get(&self, template: Template) -> std::io::Result<Tuple>;
     /**
     Finds a tuple matching the template in the space, removes it from the space and returns it.
 
@@ -60,7 +70,7 @@ pub trait Space {
 
     ```
     */
-    fn getp(&self, template: &Template) -> Option<Tuple>;
+    fn getp(&self, template: Template) -> std::io::Result<Tuple>;
 
     /**
     Puts the given tuple into the tuple space
@@ -83,7 +93,7 @@ pub trait Space {
     space_put!(space, (a, b))
     ```
     */
-    fn put(&self, tuple: Tuple);
+    fn put(&self, tuple: Tuple) -> Result<(), std::io::Error>;
     /**
     Finds a tuple matching the template in the space, and returns it without removing it.
 
@@ -109,7 +119,7 @@ pub trait Space {
 
     ```
     */
-    fn queryp(&self, query: &Template) -> Option<Tuple>;
+    fn queryp(&self, query: Template) -> std::io::Result<Tuple>;
 
     /**
     Finds a tuple matching the template in the space, and returns it without removing it.
@@ -134,7 +144,7 @@ pub trait Space {
 
     ```
     */
-    fn query(&self, template: &Template) -> Tuple;
+    fn query(&self, template: Template) -> std::io::Result<Tuple>;
     /**
     Gets all tuples in the space matching the template and removes them from the space
     # Example
@@ -159,7 +169,7 @@ pub trait Space {
 
     ```
     */
-    fn getall(&self, template: &Template) -> Vec<Tuple>;
+    fn getall(&self, template: Template) -> std::io::Result<Vec<Tuple>>;
     /**
     Gets all tuples in the space matching the template without removing them
     # Example
@@ -184,7 +194,7 @@ pub trait Space {
 
     ```
     */
-    fn queryall(&self, template: &Template) -> Vec<Tuple>;
+    fn queryall(&self, template: Template) -> std::io::Result<Vec<Tuple>>;
 }
 
 enum SpaceType {
@@ -293,7 +303,7 @@ impl LocalSpace {
         }
     }
 
-    fn look(&self, query: &Template, destroy: bool) -> Option<Tuple> {
+    fn look(&self, query: Template, destroy: bool) -> std::io::Result<Tuple> {
         let mut v = self.v.lock().unwrap();
         let index: usize;
         match self.spacetype {
@@ -301,44 +311,44 @@ impl LocalSpace {
                 if let Some(i) = v.iter().position(|t| query.query(t)) {
                     index = i;
                 } else {
-                    return None;
+                    return Err(Error::from(std::io::ErrorKind::NotFound));
                 }
             }
             SpaceType::Queue => {
                 if v.len() > 0 && query.query(v.get(0).unwrap()) {
                     index = 0;
                 } else {
-                    return None;
+                    return Err(Error::from(std::io::ErrorKind::NotFound));
                 }
             }
             SpaceType::Pile => {
                 if let Some(i) = v.iter().rev().position(|t| query.query(t)) {
                     index = v.len() - i - 1;
                 } else {
-                    return None;
+                    return Err(Error::from(std::io::ErrorKind::NotFound));
                 }
             }
             SpaceType::Stack => {
                 if v.len() > 0 && query.query(v.get(v.len() - 1).unwrap()) {
                     index = v.len() - 1;
                 } else {
-                    return None;
+                    return Err(Error::from(std::io::ErrorKind::NotFound));
                 }
             }
             SpaceType::Random => {
-                let matches = self.queryall(query);
+                let matches = self.queryall(query)?;
                 if matches.len() == 0 {
-                    return None;
+                    return Err(Error::from(std::io::ErrorKind::NotFound));
                 }
                 let mut rng = thread_rng();
                 index = rng.gen_range(0..matches.len());
             }
         }
         match destroy {
-            true => Some(v.remove(index)),
+            true => Ok(v.remove(index)),
             false => {
                 let ret = (*v.get(index).unwrap()).clone();
-                Some(ret)
+                Ok(ret)
             }
         }
     }
@@ -346,11 +356,11 @@ impl LocalSpace {
 
 //API
 impl Space for LocalSpace {
-    fn get(&self, template: &Template) -> Tuple {
+    fn get(&self, template: Template) -> std::io::Result<Tuple> {
         loop {
-            match self.getp(&template) {
-                Some(t) => return t,
-                None => {
+            match self.getp(template.clone()) {
+                Ok(t) => return Ok(t),
+                Err(_) => {
                     let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
                     {
                         let mut l = self.listeners.lock().unwrap();
@@ -362,11 +372,11 @@ impl Space for LocalSpace {
         }
     }
 
-    fn getp(&self, template: &Template) -> Option<Tuple> {
+    fn getp(&self, template: Template) -> std::io::Result<Tuple> {
         self.look(template, true)
     }
 
-    fn put(&self, tuple: Tuple) {
+    fn put(&self, tuple: Tuple) -> Result<(), std::io::Error> {
         let mut v = self.v.lock().unwrap();
         v.push(tuple);
         let mut l = self.listeners.lock().unwrap();
@@ -381,17 +391,18 @@ impl Space for LocalSpace {
         for i in remove.iter() {
             l.remove(*i);
         }
+        Ok(())
     }
 
-    fn queryp(&self, query: &Template) -> Option<Tuple> {
+    fn queryp(&self, query: Template) -> std::io::Result<Tuple> {
         self.look(query, false)
     }
 
-    fn query(&self, template: &Template) -> Tuple {
+    fn query(&self, template: Template) -> std::io::Result<Tuple> {
         loop {
-            match self.queryp(&template) {
-                Some(t) => return t,
-                None => {
+            match self.queryp(template.clone()) {
+                Ok(t) => return Ok(t),
+                Err(_) => {
                     let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
                     {
                         let mut l = self.listeners.lock().unwrap();
@@ -403,18 +414,93 @@ impl Space for LocalSpace {
         }
     }
 
-    fn getall(&self, template: &Template) -> Vec<Tuple> {
+    fn getall(&self, template: Template) -> std::io::Result<Vec<Tuple>> {
         let mut v = self.v.lock().unwrap();
-        drain_filter(&mut v, |t| template.query(t)).collect::<Vec<_>>()
+        Ok(drain_filter(&mut v, |t| template.query(t)).collect::<Vec<_>>())
     }
 
-    fn queryall(&self, template: &Template) -> Vec<Tuple> {
+    fn queryall(&self, template: Template) -> std::io::Result<Vec<Tuple>> {
         let v = self.v.lock().unwrap();
         let viter = v.iter().filter(|t| template.query(t));
         let mut res = Vec::new();
         for t in viter {
             res.push(t.clone());
         }
-        res
+        Ok(res)
+    }
+}
+
+pub struct RemoteSpace {
+    stream: Mutex<TcpStream>,
+}
+
+impl RemoteSpace {
+    pub fn new(mut conn: String) -> std::io::Result<RemoteSpace> {
+        let ip_offset = match conn.find('/') {
+            Some(c) => c,
+            None => return Err(Error::from(std::io::ErrorKind::InvalidInput)),
+        };
+        let ip_string: String = conn.drain(0..ip_offset - 1).collect();
+        let mut stream = TcpStream::connect(ip_string)?;
+        conn.remove(0);
+        stream.write(conn.as_bytes())?;
+        let mut buf = [0; 2];
+
+        let n = stream.read(&mut buf).unwrap();
+        let inc_string = String::from_utf8_lossy(&buf[..n]);
+        match inc_string.as_ref() {
+            "t" => {}
+            _ => return Err(Error::from(std::io::ErrorKind::NotFound)),
+        }
+
+        Ok(RemoteSpace {
+            stream: Mutex::new(stream),
+        })
+    }
+    fn send_recv(&self, m: Message) -> Result<Tuple, std::io::Error> {
+        let mut stream = self.stream.lock().unwrap();
+        let m_json = serde_json::to_string(&m).unwrap();
+        stream.write(m_json.as_bytes())?;
+
+        let mut buffer = [0; 1024];
+        let n = stream.read(&mut buffer)?;
+        let inc_string = String::from_utf8_lossy(&buffer[..n]);
+        let message = serde_json::from_str::<Message>(&inc_string)?;
+        Ok(message.tuple)
+    }
+}
+
+impl Space for RemoteSpace {
+    fn get(&self, template: Template) -> Result<Tuple, std::io::Error> {
+        let m = Message {
+            action: MessageType::Get,
+            tuple: new_tuple!(),
+            template,
+        };
+        self.send_recv(m)
+    }
+
+    fn getp(&self, template: Template) -> Result<Tuple, std::io::Error> {
+        todo!()
+    }
+
+    fn put(&self, tuple: Tuple) -> Result<(), std::io::Error> {
+        todo!()
+    }
+
+    fn queryp(&self, query: Template) -> Result<Tuple, std::io::Error> {
+        todo!()
+    }
+
+    fn query(&self, template: Template) -> Result<Tuple, std::io::Error> {
+        todo!()
+    }
+
+    fn getall(&self, template: Template) -> Result<Vec<Tuple>, std::io::Error> {
+        todo!()
+    }
+
+    fn queryall(&self, template: Template) -> Result<Vec<Tuple>, std::io::Error> {
+        todo!()
     }
 }

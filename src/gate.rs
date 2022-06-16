@@ -5,7 +5,7 @@ use std::{
         mpsc::{self, Receiver, Sender},
         Arc, Mutex,
     },
-    thread,
+    thread::{self, JoinHandle},
     time::Duration,
 };
 
@@ -36,10 +36,12 @@ pub struct Gate {
     pub handle: Mutex<Sender<()>>,
     repo: Arc<Repository>,
     connections: Mutex<Vec<Sender<()>>>,
+    children: Mutex<Vec<JoinHandle<()>>>,
+    pub join: Mutex<Option<JoinHandle<()>>>,
 }
 
 impl Gate {
-    pub fn new_gate(addr: SocketAddr, repo: Arc<Repository>) -> std::io::Result<Arc<Gate>> {
+    pub fn new_gate(addr: String, repo: Arc<Repository>) -> std::io::Result<Arc<Gate>> {
         let (tx, rx) = mpsc::channel();
         match TcpListener::bind(addr) {
             Ok(listener) => {
@@ -47,6 +49,8 @@ impl Gate {
                     handle: Mutex::new(tx),
                     repo,
                     connections: Mutex::new(Vec::new()),
+                    children: Mutex::new(Vec::new()),
+                    join: Mutex::new(None),
                 });
                 let clone = Arc::clone(&gate);
                 Gate::start(clone, listener, rx);
@@ -56,7 +60,8 @@ impl Gate {
         }
     }
     fn start(gate: Arc<Gate>, listener: TcpListener, rx: Receiver<()>) {
-        thread::spawn(move || loop {
+        let gateclone = Arc::clone(&gate);
+        let handle = thread::spawn(move || {
             listener
                 .set_nonblocking(true)
                 .expect("Cannot set nonblocking");
@@ -97,7 +102,9 @@ impl Gate {
                     }
                     Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                         match rx.recv_timeout(Duration::from_millis(10)) {
-                            Ok(_) => break,
+                            Ok(_) => {
+                                break;
+                            }
                             Err(_) => {
                                 thread::sleep(Duration::from_millis(2000));
                                 continue;
@@ -109,9 +116,19 @@ impl Gate {
             }
             let cons = gate.connections.lock().unwrap();
             for con in cons.iter() {
-                con.send(()).expect("Couldnt shut down threadpool");
+                match con.send(()) {
+                    Ok(_) => continue,
+                    Err(_) => continue,
+                }
+            }
+            let mut children = gate.children.lock().unwrap();
+            let n = children.len();
+            for handle in children.drain(0..n) {
+                handle.join().unwrap();
             }
         });
+        let mut join = gateclone.join.lock().unwrap();
+        let _ = join.insert(handle);
     }
 }
 
@@ -135,13 +152,18 @@ impl Connection {
             match self.stream.read(&mut buffer) {
                 Ok(n) => {
                     let inc_string = String::from_utf8_lossy(&buffer[..n]);
+                    if inc_string.len() < 1 {
+                        break;
+                    }
                     let response = self.handle_message(inc_string.to_string());
                     let r_json = serde_json::to_string(&response).unwrap();
+                    self.stream.flush().expect("expect");
                     self.stream.write(r_json.as_bytes()).unwrap();
+                    self.stream.flush().expect("expect");
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::TimedOut => continue,
                 Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
-                Err(e) => panic!("{}", e),
+                Err(_e) => continue,
             }
         }
     }
@@ -149,7 +171,10 @@ impl Connection {
     fn handle_message(&mut self, inc: String) -> Message {
         let message = match serde_json::from_str::<Message>(&inc) {
             Ok(m) => m,
-            Err(e) => panic!("Malformed message, panicking with message: {}", e),
+            Err(e) => panic!(
+                "Malformed message, panicking with message: {}, Message was: ({})",
+                e, inc
+            ),
         };
         match message.action {
             MessageType::Get => self.handle_get(message),

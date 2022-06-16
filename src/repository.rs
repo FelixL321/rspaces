@@ -24,10 +24,7 @@ impl Repository {
     }
     pub fn get_space(&self, name: String) -> Option<Arc<dyn Space>> {
         let s = self.spaces.lock().unwrap();
-        println!("get space name: {}", name);
-        for key in s.keys() {
-            println!("spaces: ({})", key);
-        }
+
         match s.get(&name) {
             Some(s) => Some(Arc::clone(s)),
             None => None,
@@ -37,7 +34,7 @@ impl Repository {
         let mut s = self.spaces.lock().unwrap();
         s.remove_entry(&name);
     }
-    pub fn add_gate(repo: Arc<Repository>, name: String, addr: SocketAddr) -> std::io::Result<()> {
+    pub fn add_gate(repo: Arc<Repository>, name: String, addr: String) -> std::io::Result<()> {
         let clone = Arc::clone(&repo);
         let mut gates = repo.gates.lock().unwrap();
         match Gate::new_gate(addr, clone) {
@@ -54,5 +51,7 @@ impl Repository {
         let gate = gates.get(&name).unwrap();
         let sender = gate.handle.lock().unwrap();
         sender.send(()).unwrap();
+        let mut handle = gate.join.lock().unwrap();
+        let _ = handle.take().unwrap().join();
     }
 }

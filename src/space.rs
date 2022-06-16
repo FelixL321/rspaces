@@ -469,7 +469,7 @@ impl RemoteSpace {
         let inc_string = String::from_utf8_lossy(&buffer[..n]);
         let mut message = serde_json::from_str::<Message>(&inc_string)?;
         if message.tuple.len() == 1 {
-            Ok(message.tuple.remove(1))
+            Ok(message.tuple.remove(0))
         } else {
             Err(Error::from(std::io::ErrorKind::NotFound))
         }

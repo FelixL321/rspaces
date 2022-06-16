@@ -13,6 +13,7 @@ mod tests {
         net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream},
         sync::Arc,
         thread,
+        time::Duration,
     };
 
     #[test]
@@ -565,12 +566,8 @@ mod tests {
             }
         });
         space_put!(space, (5, 'b'));
-        Repository::add_gate(
-            repo,
-            String::from("gate"),
-            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3800),
-        )
-        .expect("could not connect");
+        Repository::add_gate(repo, String::from("gate"), String::from("127.0.0.1:3800"))
+            .expect("could not connect");
         loop {
             let q = create_template!(5.actual(), 'b'.formal());
             let t = match space.queryp(q) {
@@ -596,12 +593,8 @@ mod tests {
             assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
         });
         space_put!(space, (5, 'b'));
-        Repository::add_gate(
-            repo,
-            String::from("gate"),
-            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3800),
-        )
-        .expect("could not connect");
+        Repository::add_gate(repo, String::from("gate"), String::from("127.0.0.1:3800"))
+            .expect("could not connect");
         loop {
             let q = create_template!(5.actual(), 'b'.formal());
             let t = match space.queryp(q) {
@@ -610,6 +603,36 @@ mod tests {
             };
             assert_eq!(5, *t.get_field::<i32>(0).unwrap());
             assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        }
+    }
+
+    #[test]
+    fn stress_gate_test() {
+        let repo = Arc::new(Repository::new());
+        let space = Arc::new(LocalSpace::new_sequential());
+        repo.add_space(String::from("space"), Arc::clone(&space));
+        thread::spawn(move || {
+            let space = RemoteSpace::new(String::from("localhost:3800/space")).unwrap();
+            thread::sleep(Duration::from_millis(1500));
+            let tuple = space
+                .get(create_template!(5.actual(), 'b'.formal()))
+                .unwrap();
+            assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
+            assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
+        });
+        space_put!(space, (5, 'b'));
+        Repository::add_gate(repo, String::from("gate"), String::from("127.0.0.1:3800"))
+            .expect("could not connect");
+        thread::sleep(Duration::from_millis(1000));
+        panic!();
+    }
+
+    #[test]
+    fn string_test() {
+        if String::from("hello") == "hello" {
+            assert!(true);
+        } else {
+            assert!(false);
         }
     }
 }

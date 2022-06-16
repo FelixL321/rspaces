@@ -12,12 +12,10 @@ use rand::Rng;
 
 use crate::create_template;
 use crate::drain_filter::drain_filter;
-use crate::new_tuple;
 use crate::Message;
 use crate::MessageType;
 use crate::Template;
 use crate::Tuple;
-use crate::TupleField;
 
 pub trait Space: Send + Sync {
     /**
@@ -438,7 +436,7 @@ impl RemoteSpace {
             Some(c) => c,
             None => return Err(Error::from(std::io::ErrorKind::InvalidInput)),
         };
-        let ip_string: String = conn.drain(0..ip_offset - 1).collect();
+        let ip_string: String = conn.drain(0..ip_offset).collect();
         let mut stream = TcpStream::connect(ip_string)?;
         conn.remove(0);
         stream.write(conn.as_bytes())?;

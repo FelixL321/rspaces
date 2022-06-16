@@ -4,7 +4,7 @@ mod tests {
     use rspace_macro::TupleField;
     use rspaces::{
         create_template, new_tuple, space_put, FieldType, LocalSpace, Message, MessageType,
-        Repository, Space, Template, TemplateType, Tuple, TupleField,
+        RemoteSpace, Repository, Space, Template, TemplateType, Tuple, TupleField,
     };
     use serde::{Deserialize, Serialize};
     use std::{
@@ -563,6 +563,37 @@ mod tests {
             Err(e) => {
                 assert!(false, "{}", e);
             }
+        });
+        space_put!(space, (5, 'b'));
+        Repository::add_gate(
+            repo,
+            String::from("gate"),
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3800),
+        )
+        .expect("could not connect");
+        loop {
+            let q = create_template!(5.actual(), 'b'.formal());
+            let t = match space.queryp(q) {
+                Ok(t) => t,
+                Err(_) => break,
+            };
+            assert_eq!(5, *t.get_field::<i32>(0).unwrap());
+            assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        }
+    }
+
+    #[test]
+    fn gate_remotespace() {
+        let repo = Arc::new(Repository::new());
+        let space = Arc::new(LocalSpace::new_sequential());
+        repo.add_space(String::from("space"), Arc::clone(&space));
+        thread::spawn(move || {
+            let space = RemoteSpace::new(String::from("localhost:3800/space")).unwrap();
+            let tuple = space
+                .get(create_template!(5.actual(), 'b'.formal()))
+                .unwrap();
+            assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
+            assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
         });
         space_put!(space, (5, 'b'));
         Repository::add_gate(

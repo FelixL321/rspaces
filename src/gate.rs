@@ -22,11 +22,13 @@ pub enum MessageType {
     Queryp,
     Queryall,
     Put,
+    Error,
+    Ok,
 }
 #[derive(Serialize, Deserialize)]
 pub struct Message {
     pub action: MessageType,
-    pub tuple: Tuple,
+    pub tuple: Vec<Tuple>,
     pub template: Template,
 }
 
@@ -151,20 +153,97 @@ impl Connection {
         };
         match message.action {
             MessageType::Get => self.handle_get(message),
-            MessageType::Getp => todo!(),
-            MessageType::Getall => todo!(),
-            MessageType::Query => todo!(),
-            MessageType::Queryp => todo!(),
-            MessageType::Queryall => todo!(),
-            MessageType::Put => todo!(),
+            MessageType::Getp => self.handle_getp(message),
+            MessageType::Getall => self.handle_getall(message),
+            MessageType::Query => self.handle_query(message),
+            MessageType::Queryp => self.handle_queryp(message),
+            MessageType::Queryall => self.handle_queryall(message),
+            MessageType::Put => self.handle_put(message),
+            m => self.handle_echo(m),
         }
     }
 
     fn handle_get(&mut self, message: Message) -> Message {
-        let tuple = self.space.get(message.template).unwrap();
+        let mut tuple = Vec::new();
+        tuple.push(self.space.get(message.template).unwrap());
         Message {
-            action: MessageType::Get,
+            action: MessageType::Ok,
             tuple,
+            template: create_template!(),
+        }
+    }
+    fn handle_getp(&mut self, message: Message) -> Message {
+        let mut action = MessageType::Ok;
+        let mut tuple = Vec::new();
+        match self.space.getp(message.template) {
+            Ok(t) => tuple.push(t),
+            Err(_) => {
+                action = MessageType::Error;
+            }
+        };
+        Message {
+            action,
+            tuple,
+            template: create_template!(),
+        }
+    }
+    fn handle_query(&mut self, message: Message) -> Message {
+        let mut tuple = Vec::new();
+        tuple.push(self.space.query(message.template).unwrap());
+        Message {
+            action: MessageType::Ok,
+            tuple,
+            template: create_template!(),
+        }
+    }
+    fn handle_queryp(&mut self, message: Message) -> Message {
+        let mut action = MessageType::Ok;
+        let mut tuple = Vec::new();
+        match self.space.queryp(message.template) {
+            Ok(t) => tuple.push(t),
+            Err(_) => {
+                action = MessageType::Error;
+            }
+        };
+        Message {
+            action,
+            tuple,
+            template: create_template!(),
+        }
+    }
+    fn handle_getall(&mut self, message: Message) -> Message {
+        let tuple = self.space.getall(message.template).unwrap();
+        Message {
+            action: MessageType::Ok,
+            tuple,
+            template: create_template!(),
+        }
+    }
+
+    fn handle_echo(&self, action: MessageType) -> Message {
+        Message {
+            action,
+            tuple: Vec::new(),
+            template: create_template!(),
+        }
+    }
+
+    fn handle_queryall(&mut self, message: Message) -> Message {
+        let tuple = self.space.queryall(message.template).unwrap();
+        Message {
+            action: MessageType::Ok,
+            tuple,
+            template: create_template!(),
+        }
+    }
+
+    fn handle_put(&mut self, message: Message) -> Message {
+        self.space
+            .put(message.tuple.get(0).unwrap().clone())
+            .unwrap();
+        Message {
+            action: MessageType::Ok,
+            tuple: Vec::new(),
             template: create_template!(),
         }
     }

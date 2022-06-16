@@ -13,7 +13,6 @@ use rand::Rng;
 use crate::create_template;
 use crate::drain_filter::drain_filter;
 use crate::new_tuple;
-use crate::FieldType;
 use crate::Message;
 use crate::MessageType;
 use crate::Template;
@@ -354,7 +353,6 @@ impl LocalSpace {
     }
 }
 
-//API
 impl Space for LocalSpace {
     fn get(&self, template: Template) -> std::io::Result<Tuple> {
         loop {
@@ -457,16 +455,40 @@ impl RemoteSpace {
             stream: Mutex::new(stream),
         })
     }
-    fn send_recv(&self, m: Message) -> Result<Tuple, std::io::Error> {
+
+    fn send(&self, m: Message) -> Result<(), std::io::Error> {
         let mut stream = self.stream.lock().unwrap();
         let m_json = serde_json::to_string(&m).unwrap();
         stream.write(m_json.as_bytes())?;
+        stream.flush()?;
+        Ok(())
+    }
 
+    fn recv(&self) -> Result<Tuple, std::io::Error> {
+        let mut stream = self.stream.lock().unwrap();
+        let mut buffer = [0; 1024];
+        let n = stream.read(&mut buffer)?;
+        let inc_string = String::from_utf8_lossy(&buffer[..n]);
+        let mut message = serde_json::from_str::<Message>(&inc_string)?;
+        if message.tuple.len() == 1 {
+            Ok(message.tuple.remove(1))
+        } else {
+            Err(Error::from(std::io::ErrorKind::NotFound))
+        }
+    }
+
+    fn recv_multiple(&self) -> Result<Vec<Tuple>, std::io::Error> {
+        let mut stream = self.stream.lock().unwrap();
         let mut buffer = [0; 1024];
         let n = stream.read(&mut buffer)?;
         let inc_string = String::from_utf8_lossy(&buffer[..n]);
         let message = serde_json::from_str::<Message>(&inc_string)?;
         Ok(message.tuple)
+    }
+
+    fn send_recv(&self, m: Message) -> Result<Tuple, std::io::Error> {
+        self.send(m)?;
+        self.recv()
     }
 }
 
@@ -474,33 +496,75 @@ impl Space for RemoteSpace {
     fn get(&self, template: Template) -> Result<Tuple, std::io::Error> {
         let m = Message {
             action: MessageType::Get,
-            tuple: new_tuple!(),
+            tuple: Vec::new(),
             template,
         };
         self.send_recv(m)
     }
 
     fn getp(&self, template: Template) -> Result<Tuple, std::io::Error> {
-        todo!()
+        let m = Message {
+            action: MessageType::Getp,
+            tuple: Vec::new(),
+            template,
+        };
+        self.send_recv(m)
     }
 
     fn put(&self, tuple: Tuple) -> Result<(), std::io::Error> {
-        todo!()
+        let m = Message {
+            action: MessageType::Put,
+            tuple: Vec::from([tuple]),
+            template: create_template!(),
+        };
+        self.send(m)?;
+        let mut stream = self.stream.lock().unwrap();
+        let mut buffer = [0; 1024];
+        let n = stream.read(&mut buffer)?;
+        let inc_string = String::from_utf8_lossy(&buffer[..n]);
+        let message = serde_json::from_str::<Message>(&inc_string)?;
+        if message.action == MessageType::Ok {
+            Ok(())
+        } else {
+            Err(Error::from(std::io::ErrorKind::Other))
+        }
     }
 
-    fn queryp(&self, query: Template) -> Result<Tuple, std::io::Error> {
-        todo!()
+    fn queryp(&self, template: Template) -> Result<Tuple, std::io::Error> {
+        let m = Message {
+            action: MessageType::Queryp,
+            tuple: Vec::new(),
+            template,
+        };
+        self.send_recv(m)
     }
 
     fn query(&self, template: Template) -> Result<Tuple, std::io::Error> {
-        todo!()
+        let m = Message {
+            action: MessageType::Query,
+            tuple: Vec::new(),
+            template,
+        };
+        self.send_recv(m)
     }
 
     fn getall(&self, template: Template) -> Result<Vec<Tuple>, std::io::Error> {
-        todo!()
+        let m = Message {
+            action: MessageType::Getall,
+            tuple: Vec::new(),
+            template,
+        };
+        self.send(m)?;
+        self.recv_multiple()
     }
 
     fn queryall(&self, template: Template) -> Result<Vec<Tuple>, std::io::Error> {
-        todo!()
+        let m = Message {
+            action: MessageType::Getp,
+            tuple: Vec::new(),
+            template,
+        };
+        self.send(m)?;
+        self.recv_multiple()
     }
 }

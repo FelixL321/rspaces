@@ -16,24 +16,25 @@ macro_rules! space_put {
 macro_rules! new_tuple {
     ( $( $x:expr ),* ) => {
         {
-            let mut temp_vec : Vec<Box<dyn TupleField>> = Vec::new();
+            let mut _temp_vec : Vec<Box<dyn TupleField>> = Vec::new();
             $(
-                temp_vec.push(Box::new($x));
+                _temp_vec.push(Box::new($x));
             )*
-            Tuple::new(temp_vec)
+            Tuple::new(_temp_vec)
         }
     };
+
 }
 
 #[macro_export]
 macro_rules! create_template {
     ( $( $x:expr ),* ) => {
         {
-            let mut q = Template::new();
+            let mut _q = Template::new();
             $(
-                q.fields.push($x);
+                _q.fields.push($x);
             )*
-            q
+            _q
         }
     };
 }

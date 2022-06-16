@@ -507,19 +507,19 @@ mod tests {
         let space = LocalSpace::new_sequential();
         let m = Message {
             action: MessageType::Put,
-            tuple: new_tuple!(5, 'b'),
+            tuple: Vec::from([new_tuple!(5, 'b')]),
             template: create_template!(),
         };
         let m_json = serde_json::to_string(&m).expect("should be able to");
-        let m_from_json: Message = serde_json::from_str(&m_json).expect("please");
+        let mut m_from_json: Message = serde_json::from_str(&m_json).expect("please");
         assert_eq!(m_from_json.action, MessageType::Put);
-        let tuple = m_from_json.tuple;
+        let tuple = m_from_json.tuple.remove(0);
         assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
         assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
         space.put(tuple).unwrap();
         let m = Message {
             action: MessageType::Get,
-            tuple: new_tuple!(),
+            tuple: Vec::new(),
             template: create_template!(5.actual(), 'a'.formal()),
         };
         let m_json = serde_json::to_string(&m).expect("should be able to");
@@ -540,7 +540,7 @@ mod tests {
             Ok(mut stream) => {
                 let m = Message {
                     action: MessageType::Get,
-                    tuple: new_tuple!(),
+                    tuple: Vec::new(),
                     template: create_template!(5.actual(), 'b'.formal()),
                 };
                 let m_json = serde_json::to_string(&m).unwrap();
@@ -555,9 +555,10 @@ mod tests {
 
                 let n = stream.read(&mut buffer).unwrap();
                 let inc_string = String::from_utf8_lossy(&buffer[..n]);
-                let message = serde_json::from_str::<Message>(&inc_string).unwrap();
-                assert_eq!(5, *message.tuple.get_field::<i32>(0).unwrap());
-                assert_eq!('b', *message.tuple.get_field::<char>(1).unwrap());
+                let mut message = serde_json::from_str::<Message>(&inc_string).unwrap();
+                let tuple = message.tuple.remove(0);
+                assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
+                assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
             }
             Err(e) => {
                 assert!(false, "{}", e);

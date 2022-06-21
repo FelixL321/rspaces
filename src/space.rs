@@ -442,7 +442,7 @@ impl RemoteSpace {
         stream.write(conn.as_bytes())?;
         let mut buf = [0; 2];
 
-        let n = stream.read(&mut buf).unwrap();
+        let n = stream.read(&mut buf)?;
         let inc_string = String::from_utf8_lossy(&buf[..n]);
         match inc_string.as_ref() {
             "t" => {}
@@ -456,7 +456,7 @@ impl RemoteSpace {
 
     fn send(&self, m: Message) -> Result<(), std::io::Error> {
         let mut stream = self.stream.lock().unwrap();
-        let m_json = serde_json::to_string(&m).unwrap();
+        let m_json = serde_json::to_string(&m)?;
         stream.write(m_json.as_bytes())?;
         stream.flush()?;
         Ok(())

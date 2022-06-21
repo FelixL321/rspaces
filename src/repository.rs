@@ -47,7 +47,10 @@ impl Repository {
 
     pub fn close_gate(&self, name: String) {
         let gates = self.gates.lock().unwrap();
-        let gate = gates.get(&name).unwrap();
+        let gate = match gates.get(&name) {
+            Some(gate) => gate,
+            None => return,
+        };
         let sender = gate.handle.lock().unwrap();
         sender.send(()).unwrap();
         let mut handle = gate.join.lock().unwrap();

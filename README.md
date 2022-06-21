@@ -1,5 +1,4 @@
 # rSpaces
-# Introduction
 
 ## Installation
 Include the rspaces dependency in your Cargo.toml file
@@ -13,6 +12,18 @@ Install the rust-analyzer plugin for your favorite IDE/editor for help with rust
 
 ## Usage
 To create a new space use the constructor for one of the space types.
+```rust
+let space_sequential = LocalSpace::new_sequential();
+let space_pile = LocalSpace::new_pile();
+```
+
+rspaces provide 2 ways of creating new tuples. The first includes making a new instance of a fields vector and then converting it to a tuple:
+```rust
+let fields: Vec<Box<dyn TupleField>> = vec![Box::new(1), Box::new('a')];
+let tuple = Tuple::new(fields);
+```
+rspaces however also provides you a shorthand macro for the same:
+
 
 ## Differences to jSpaces
 rspaces only provide support for ipv4 over tcp in case of remote spaces. This results in the gate/remote_space syntax a bit different. The following creates a new gate for a repository.
@@ -21,8 +32,8 @@ rspaces only provide support for ipv4 over tcp in case of remote spaces. This re
 
 ```rust
 let connection_string = "127.0.0.1:31415".to_string();
-repo.add_space(String::from("space1"), Arc::clone(&space));
-Repository::add_gate(Arc::clone(&repo), String::from("gate1"), conn_string);
+let repo = Arc::new(Repository::new());
+Repository::add_gate(Arc::clone(&repo), String::from("gate1"), connection_string);
 ```
 
 And the following will create a new remote space connecting to the above space.

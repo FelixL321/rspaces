@@ -611,4 +611,26 @@ mod tests {
             assert!(false);
         }
     }
+    #[test]
+    fn livelock() {
+        let sender = Arc::new(LocalSpace::new_sequential());
+        let reciever = Arc::clone(&sender);
+        thread::spawn(move || {
+            let a = 1;
+            let b = 'c';
+            let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
+            let tuple = Tuple::new(fields);
+            sender.put(tuple).unwrap();
+            let a = 5;
+            let b = 'b';
+            let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
+            let tuple = Tuple::new(fields);
+            sender.put(tuple).unwrap();
+        });
+
+        let q = new_template!(5.actual(), 'a'.formal());
+        let t = reciever.get(q).unwrap();
+        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
+        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+    }
 }

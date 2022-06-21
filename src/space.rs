@@ -3,9 +3,9 @@ use std::io::Read;
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::mpsc;
-use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
 use std::sync::Mutex;
+use std::sync::MutexGuard;
 
 use rand::thread_rng;
 use rand::Rng;
@@ -228,7 +228,7 @@ assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
 */
 pub struct LocalSpace {
     v: Mutex<Vec<Tuple>>,
-    listeners: Mutex<Vec<Sender<bool>>>,
+    listeners: Mutex<Vec<Sender<()>>>,
     spacetype: SpaceType,
 }
 
@@ -300,8 +300,12 @@ impl LocalSpace {
         }
     }
 
-    fn look(&self, query: Template, destroy: bool) -> std::io::Result<Tuple> {
-        let mut v = self.v.lock().unwrap();
+    fn look(
+        &self,
+        query: Template,
+        destroy: bool,
+        v: &mut MutexGuard<Vec<Tuple>>,
+    ) -> std::io::Result<Tuple> {
         let index: usize;
         match self.spacetype {
             SpaceType::Sequential => {
@@ -354,22 +358,24 @@ impl LocalSpace {
 impl Space for LocalSpace {
     fn get(&self, template: Template) -> std::io::Result<Tuple> {
         loop {
-            match self.getp(template.clone()) {
-                Ok(t) => return Ok(t),
-                Err(_) => {
-                    let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
-                    {
+            let (tx, rx) = mpsc::channel();
+            {
+                let mut v = self.v.lock().unwrap();
+                match self.look(template.clone(), true, &mut v) {
+                    Ok(t) => return Ok(t),
+                    Err(_) => {
                         let mut l = self.listeners.lock().unwrap();
                         l.push(tx);
                     }
-                    let _ = rx.recv();
-                }
-            };
+                };
+            }
+            let _ = rx.recv();
         }
     }
 
     fn getp(&self, template: Template) -> std::io::Result<Tuple> {
-        self.look(template, true)
+        let mut v = self.v.lock().unwrap();
+        self.look(template, true, &mut v)
     }
 
     fn put(&self, tuple: Tuple) -> Result<(), std::io::Error> {
@@ -379,7 +385,7 @@ impl Space for LocalSpace {
         let mut remove = Vec::new();
         for i in 0..l.len() {
             let tx = l.get(i).unwrap();
-            match tx.send(true) {
+            match tx.send(()) {
                 Err(e) => panic!("panic: {:?}", e),
                 Ok(_) => remove.push(i),
             }
@@ -390,23 +396,25 @@ impl Space for LocalSpace {
         Ok(())
     }
 
-    fn queryp(&self, query: Template) -> std::io::Result<Tuple> {
-        self.look(query, false)
+    fn queryp(&self, template: Template) -> std::io::Result<Tuple> {
+        let mut v = self.v.lock().unwrap();
+        self.look(template, false, &mut v)
     }
 
     fn query(&self, template: Template) -> std::io::Result<Tuple> {
         loop {
-            match self.queryp(template.clone()) {
-                Ok(t) => return Ok(t),
-                Err(_) => {
-                    let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
-                    {
+            let (tx, rx) = mpsc::channel();
+            {
+                let mut v = self.v.lock().unwrap();
+                match self.look(template.clone(), false, &mut v) {
+                    Ok(t) => return Ok(t),
+                    Err(_) => {
                         let mut l = self.listeners.lock().unwrap();
                         l.push(tx);
                     }
-                    let _ = rx.recv();
-                }
-            };
+                };
+            }
+            let _ = rx.recv();
         }
     }
 

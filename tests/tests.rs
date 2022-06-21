@@ -3,17 +3,16 @@ mod tests {
     use core::time;
     use rspace_macro::TupleField;
     use rspaces::{
-        create_template, new_tuple, space_put, FieldType, LocalSpace, Message, MessageType,
-        RemoteSpace, Repository, Space, Template, TemplateType, Tuple, TupleField,
+        create_template, new_tuple, FieldType, LocalSpace, Message, MessageType, RemoteSpace,
+        Repository, Space, Template, TemplateType, Tuple, TupleField,
     };
     use serde::{Deserialize, Serialize};
     use std::{
         any::Any,
         io::{Read, Write},
-        net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream},
+        net::TcpStream,
         sync::Arc,
         thread,
-        time::Duration,
     };
 
     #[test]
@@ -226,7 +225,7 @@ mod tests {
     #[test]
     fn macro_test() {
         let space = LocalSpace::new_sequential();
-        space_put!(space, (5, 'b'));
+        space.put(new_tuple!(5, 'b')).unwrap();
         let q = create_template!(5.actual(), 'a'.formal());
         let t = space.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
@@ -238,9 +237,9 @@ mod tests {
         let sender = Arc::new(LocalSpace::new_pile());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
-            space_put!(sender, ('a', 'b'));
-            space_put!(sender, (5, 'b'));
-            space_put!(sender, (4, 'b'));
+            sender.put(new_tuple!('a', 'b')).unwrap();
+            sender.put(new_tuple!(5, 'b')).unwrap();
+            sender.put(new_tuple!(4, 'b')).unwrap();
         });
 
         let q = create_template!(5.actual(), 'a'.formal());
@@ -259,8 +258,8 @@ mod tests {
         let sender = Arc::new(LocalSpace::new_queue());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
-            space_put!(sender, (5, 'b'));
-            space_put!(sender, (4, 'b'));
+            sender.put(new_tuple!(5, 'b')).unwrap();
+            sender.put(new_tuple!(4, 'b')).unwrap();
         });
 
         let ten_millis = time::Duration::from_millis(100);
@@ -288,8 +287,8 @@ mod tests {
         let sender = Arc::new(LocalSpace::new_stack());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
-            space_put!(sender, (4, 'b'));
-            space_put!(sender, (5, 'b'));
+            sender.put(new_tuple!(4, 'b')).unwrap();
+            sender.put(new_tuple!(5, 'b')).unwrap();
         });
 
         let ten_millis = time::Duration::from_millis(100);
@@ -316,9 +315,9 @@ mod tests {
         let sender = Arc::new(LocalSpace::new_pile());
         let reciever = Arc::clone(&sender);
         thread::spawn(move || {
-            space_put!(sender, (4, 'b'));
-            space_put!(sender, (5, 'b'));
-            space_put!(sender, ('a', 'b'));
+            sender.put(new_tuple!(4, 'b')).unwrap();
+            sender.put(new_tuple!(5, 'b')).unwrap();
+            sender.put(new_tuple!('a', 'b')).unwrap();
         });
 
         let q = create_template!(5.actual(), 'a'.formal());
@@ -347,8 +346,8 @@ mod tests {
             let space2 = repoarc
                 .get_space(String::from("space2"))
                 .expect("Should have found space");
-            space_put!(space1, (4, 'b'));
-            space_put!(space2, (5, 'b'));
+            space1.put(new_tuple!(4, 'b')).unwrap();
+            space2.put(new_tuple!(5, 'b')).unwrap();
         });
         let q = create_template!(5.actual(), 'a'.formal());
         let t = space2.get(q).unwrap();
@@ -380,8 +379,8 @@ mod tests {
             let space2 = repoarc
                 .get_space(String::from("space2"))
                 .expect("Should have found space");
-            space_put!(space1, (4, 'b'));
-            space_put!(space2, (5, 'b'));
+            space1.put(new_tuple!(4, 'b')).unwrap();
+            space2.put(new_tuple!(5, 'b')).unwrap();
         });
         let repoarc = Arc::clone(&repo2);
         thread::spawn(move || {
@@ -391,8 +390,8 @@ mod tests {
             let space3 = repoarc
                 .get_space(String::from("space3"))
                 .expect("Should have found space");
-            space_put!(space2, (4, 'b'));
-            space_put!(space3, (5, 'b'));
+            space2.put(new_tuple!(4, 'b')).unwrap();
+            space3.put(new_tuple!(5, 'b')).unwrap();
         });
 
         let q = create_template!(4.actual(), 'a'.formal());
@@ -488,7 +487,7 @@ mod tests {
     #[test]
     fn typing_test() {
         let space = LocalSpace::new_sequential();
-        space_put!(space, (5, 7));
+        space.put(new_tuple!(5, 7)).unwrap();
         let template = create_template!(5.actual(), 7.actual());
         let tuple = space.query(template).unwrap();
         assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
@@ -565,7 +564,7 @@ mod tests {
                 assert!(false, "{}", e);
             }
         });
-        space_put!(space, (5, 'b'));
+        space.put(new_tuple!(5, 'b')).unwrap();
         Repository::add_gate(repo, String::from("gate"), String::from("127.0.0.1:3800"))
             .expect("could not connect");
         loop {
@@ -592,7 +591,7 @@ mod tests {
             assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
             assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
         });
-        space_put!(space, (5, 'b'));
+        space.put(new_tuple!(5, 'b')).unwrap();
         Repository::add_gate(repo, String::from("gate"), String::from("127.0.0.1:3801"))
             .expect("could not connect");
         loop {

@@ -1,6 +1,6 @@
 use std::{
     io::{Read, Write},
-    net::{SocketAddr, TcpListener, TcpStream},
+    net::{TcpListener, TcpStream},
     sync::{
         mpsc::{self, Receiver, Sender},
         Arc, Mutex,

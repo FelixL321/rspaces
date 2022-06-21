@@ -11,7 +11,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{create_template, space::Space, Repository, Template, Tuple};
+use crate::{new_template, space::Space, Repository, Template, Tuple};
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 pub enum MessageType {
@@ -194,7 +194,7 @@ impl Connection {
         Message {
             action: MessageType::Ok,
             tuple,
-            template: create_template!(),
+            template: new_template!(),
         }
     }
     fn handle_getp(&mut self, message: Message) -> Message {
@@ -209,7 +209,7 @@ impl Connection {
         Message {
             action,
             tuple,
-            template: create_template!(),
+            template: new_template!(),
         }
     }
     fn handle_query(&mut self, message: Message) -> Message {
@@ -218,7 +218,7 @@ impl Connection {
         Message {
             action: MessageType::Ok,
             tuple,
-            template: create_template!(),
+            template: new_template!(),
         }
     }
     fn handle_queryp(&mut self, message: Message) -> Message {
@@ -233,7 +233,7 @@ impl Connection {
         Message {
             action,
             tuple,
-            template: create_template!(),
+            template: new_template!(),
         }
     }
     fn handle_getall(&mut self, message: Message) -> Message {
@@ -241,7 +241,7 @@ impl Connection {
         Message {
             action: MessageType::Ok,
             tuple,
-            template: create_template!(),
+            template: new_template!(),
         }
     }
 
@@ -249,7 +249,7 @@ impl Connection {
         Message {
             action,
             tuple: Vec::new(),
-            template: create_template!(),
+            template: new_template!(),
         }
     }
 
@@ -258,7 +258,7 @@ impl Connection {
         Message {
             action: MessageType::Ok,
             tuple,
-            template: create_template!(),
+            template: new_template!(),
         }
     }
 
@@ -269,7 +269,7 @@ impl Connection {
         Message {
             action: MessageType::Ok,
             tuple: Vec::new(),
-            template: create_template!(),
+            template: new_template!(),
         }
     }
 }

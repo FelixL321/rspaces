@@ -5,7 +5,7 @@ use std::{
 };
 
 use rspaces::{
-    create_template, new_tuple, FieldType, LocalSpace, RemoteSpace, Repository, Space, Template,
+    new_template, new_tuple, FieldType, LocalSpace, RemoteSpace, Repository, Space, Template,
     Tuple, TupleField,
 };
 
@@ -60,7 +60,7 @@ fn handle_coms<T: Space>(space: Arc<T>, mut starting: bool) {
             }
         } else {
             let t = space
-                .get(create_template!(
+                .get(new_template!(
                     (!x).actual(),
                     String::new().formal(),
                     String::new().formal()

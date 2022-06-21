@@ -13,7 +13,7 @@ macro_rules! new_tuple {
 }
 
 #[macro_export]
-macro_rules! create_template {
+macro_rules! new_template {
     ( $( $x:expr ),* ) => {
         {
             let mut _q = Template::new();

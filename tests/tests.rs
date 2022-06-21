@@ -3,7 +3,7 @@ mod tests {
     use core::time;
     use rspace_macro::TupleField;
     use rspaces::{
-        create_template, new_tuple, FieldType, LocalSpace, Message, MessageType, RemoteSpace,
+        new_template, new_tuple, FieldType, LocalSpace, Message, MessageType, RemoteSpace,
         Repository, Space, Template, TemplateType, Tuple, TupleField,
     };
     use serde::{Deserialize, Serialize};
@@ -56,7 +56,7 @@ mod tests {
         let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
         let tuple = Tuple::new(fields);
         space.put(tuple).unwrap();
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let t = space.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -91,7 +91,7 @@ mod tests {
             sender.put(tuple).unwrap();
         });
 
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -132,7 +132,7 @@ mod tests {
             sender.put(tuple).unwrap();
         });
 
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.query(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -226,7 +226,7 @@ mod tests {
     fn macro_test() {
         let space = LocalSpace::new_sequential();
         space.put(new_tuple!(5, 'b')).unwrap();
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let t = space.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -242,12 +242,12 @@ mod tests {
             sender.put(new_tuple!(4, 'b')).unwrap();
         });
 
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
-        let q = create_template!(4.actual(), 'a'.formal());
+        let q = new_template!(4.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -264,19 +264,19 @@ mod tests {
 
         let ten_millis = time::Duration::from_millis(100);
         thread::sleep(ten_millis);
-        let q = create_template!(4.actual(), 'a'.formal());
+        let q = new_template!(4.actual(), 'a'.formal());
         if let Ok(_t) = reciever.getp(q) {
             assert!(false, "Found tuple and should not")
         } else {
             assert!(true);
         }
 
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
-        let q = create_template!(4.actual(), 'a'.formal());
+        let q = new_template!(4.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -293,18 +293,18 @@ mod tests {
 
         let ten_millis = time::Duration::from_millis(100);
         thread::sleep(ten_millis);
-        let q = create_template!(4.actual(), 'a'.formal());
+        let q = new_template!(4.actual(), 'a'.formal());
         if let Ok(_t) = reciever.getp(q) {
             assert!(false, "Found tuple and should not")
         } else {
             assert!(true);
         }
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
-        let q = create_template!(4.actual(), 'a'.formal());
+        let q = new_template!(4.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -320,12 +320,12 @@ mod tests {
             sender.put(new_tuple!('a', 'b')).unwrap();
         });
 
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
-        let q = create_template!(4.actual(), 'a'.formal());
+        let q = new_template!(4.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -349,12 +349,12 @@ mod tests {
             space1.put(new_tuple!(4, 'b')).unwrap();
             space2.put(new_tuple!(5, 'b')).unwrap();
         });
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let t = space2.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
-        let q = create_template!(4.actual(), 'a'.formal());
+        let q = new_template!(4.actual(), 'a'.formal());
         let t = space1.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -394,22 +394,22 @@ mod tests {
             space3.put(new_tuple!(5, 'b')).unwrap();
         });
 
-        let q = create_template!(4.actual(), 'a'.formal());
+        let q = new_template!(4.actual(), 'a'.formal());
         let t = space2.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let t = space2.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
-        let q = create_template!(4.actual(), 'a'.formal());
+        let q = new_template!(4.actual(), 'a'.formal());
         let t = space1.get(q).unwrap();
         assert_eq!(4, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
 
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let t = space3.get(q).unwrap();
         assert_eq!(5, *t.get_field::<i32>(0).unwrap());
         assert_eq!('b', *t.get_field::<char>(1).unwrap());
@@ -474,7 +474,7 @@ mod tests {
         let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
         let tuple = Tuple::new(fields);
         space.put(tuple).unwrap();
-        let q = create_template!(5.actual(), 'a'.formal());
+        let q = new_template!(5.actual(), 'a'.formal());
         let q_json = serde_json::to_string(&q).unwrap();
         print!("{}", q_json);
         let template: Template = serde_json::from_str(&q_json).unwrap();
@@ -488,12 +488,12 @@ mod tests {
     fn typing_test() {
         let space = LocalSpace::new_sequential();
         space.put(new_tuple!(5, 7)).unwrap();
-        let template = create_template!(5.actual(), 7.actual());
+        let template = new_template!(5.actual(), 7.actual());
         let tuple = space.query(template).unwrap();
         assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
         assert_eq!(7, *tuple.get_field::<i32>(1).unwrap());
         let x: i64 = 5;
-        let temp2 = create_template!(x.actual(), 7.actual());
+        let temp2 = new_template!(x.actual(), 7.actual());
         match space.queryp(temp2) {
             Ok(_) => {
                 assert!(false, "Should not have found as different data types")
@@ -508,7 +508,7 @@ mod tests {
         let m = Message {
             action: MessageType::Put,
             tuple: Vec::from([new_tuple!(5, 'b')]),
-            template: create_template!(),
+            template: new_template!(),
         };
         let m_json = serde_json::to_string(&m).expect("should be able to");
         let mut m_from_json: Message = serde_json::from_str(&m_json).expect("please");
@@ -520,7 +520,7 @@ mod tests {
         let m = Message {
             action: MessageType::Get,
             tuple: Vec::new(),
-            template: create_template!(5.actual(), 'a'.formal()),
+            template: new_template!(5.actual(), 'a'.formal()),
         };
         let m_json = serde_json::to_string(&m).expect("should be able to");
         let m_from_json: Message = serde_json::from_str(&m_json).expect("please");
@@ -541,7 +541,7 @@ mod tests {
                 let m = Message {
                     action: MessageType::Get,
                     tuple: Vec::new(),
-                    template: create_template!(5.actual(), 'b'.formal()),
+                    template: new_template!(5.actual(), 'b'.formal()),
                 };
                 let m_json = serde_json::to_string(&m).unwrap();
                 let mut buffer = [0; 1024];
@@ -568,7 +568,7 @@ mod tests {
         Repository::add_gate(repo, String::from("gate"), String::from("127.0.0.1:3800"))
             .expect("could not connect");
         loop {
-            let q = create_template!(5.actual(), 'b'.formal());
+            let q = new_template!(5.actual(), 'b'.formal());
             let t = match space.queryp(q) {
                 Ok(t) => t,
                 Err(_) => break,
@@ -585,9 +585,7 @@ mod tests {
         repo.add_space(String::from("space"), Arc::clone(&space));
         thread::spawn(move || {
             let space = RemoteSpace::new(String::from("localhost:3801/space")).unwrap();
-            let tuple = space
-                .get(create_template!(5.actual(), 'b'.formal()))
-                .unwrap();
+            let tuple = space.get(new_template!(5.actual(), 'b'.formal())).unwrap();
             assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
             assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
         });
@@ -595,7 +593,7 @@ mod tests {
         Repository::add_gate(repo, String::from("gate"), String::from("127.0.0.1:3801"))
             .expect("could not connect");
         loop {
-            let q = create_template!(5.actual(), 'b'.formal());
+            let q = new_template!(5.actual(), 'b'.formal());
             let t = match space.queryp(q) {
                 Ok(t) => t,
                 Err(_) => break,

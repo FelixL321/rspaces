@@ -10,8 +10,8 @@ use std::sync::Mutex;
 use rand::thread_rng;
 use rand::Rng;
 
-use crate::create_template;
 use crate::drain_filter::drain_filter;
+use crate::new_template;
 use crate::Message;
 use crate::MessageType;
 use crate::Template;
@@ -513,7 +513,7 @@ impl Space for RemoteSpace {
         let m = Message {
             action: MessageType::Put,
             tuple: Vec::from([tuple]),
-            template: create_template!(),
+            template: new_template!(),
         };
         self.send(m)?;
         let mut stream = self.stream.lock().unwrap();

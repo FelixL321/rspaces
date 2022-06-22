@@ -94,7 +94,7 @@ impl Gate {
                         let mut c = Connection {
                             signal: rx,
                             stream: s,
-                            space: space,
+                            space,
                         };
                         let mut cons = gate.connections.lock().unwrap();
                         cons.push(tx);

@@ -440,6 +440,7 @@ impl RemoteSpace {
         };
         let ip_string: String = conn.drain(0..ip_offset).collect();
         let mut stream = TcpStream::connect(ip_string)?;
+        stream.set_nonblocking(false).unwrap();
         conn.remove(0);
         stream.write(conn.as_bytes())?;
         let mut buf = [0; 2];

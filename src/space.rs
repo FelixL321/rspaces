@@ -444,7 +444,7 @@ impl RemoteSpace {
         stream.write(conn.as_bytes())?;
         let mut buf = [0; 2];
 
-        let n = stream.read(&mut buf)?;
+        let n = stream.read(&mut buf[..])?;
         let inc_string = String::from_utf8_lossy(&buf[..n]);
         match inc_string.as_ref() {
             "t" => {}
@@ -467,7 +467,7 @@ impl RemoteSpace {
     fn recv(&self) -> Result<Tuple, std::io::Error> {
         let mut stream = self.stream.lock().unwrap();
         let mut buffer = [0; 1024];
-        let n = stream.read(&mut buffer)?;
+        let n = stream.read(&mut buffer[..])?;
         let inc_string = String::from_utf8_lossy(&buffer[..n]);
         let mut message = serde_json::from_str::<Message>(&inc_string)?;
         if message.tuple.len() == 1 {
@@ -480,7 +480,7 @@ impl RemoteSpace {
     fn recv_multiple(&self) -> Result<Vec<Tuple>, std::io::Error> {
         let mut stream = self.stream.lock().unwrap();
         let mut buffer = [0; 1024];
-        let n = stream.read(&mut buffer)?;
+        let n = stream.read(&mut buffer[..])?;
         let inc_string = String::from_utf8_lossy(&buffer[..n]);
         let message = serde_json::from_str::<Message>(&inc_string)?;
         Ok(message.tuple)
@@ -520,7 +520,7 @@ impl Space for RemoteSpace {
         self.send(m)?;
         let mut stream = self.stream.lock().unwrap();
         let mut buffer = [0; 1024];
-        let n = stream.read(&mut buffer)?;
+        let n = stream.read(&mut buffer[..])?;
         let inc_string = String::from_utf8_lossy(&buffer[..n]);
         let message = serde_json::from_str::<Message>(&inc_string)?;
         if message.action == MessageType::Ok {

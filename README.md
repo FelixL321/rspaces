@@ -16,6 +16,8 @@ Install the rust-analyzer plugin for your favorite IDE/editor for help with rust
 3. [Distributed usage](./docs/distributed.md)
 4. [Seriliazation](./docs/serilization.md)
 
+## Documentation
+For more in depth documentation you can clone the github repository and run `cargo doc` and then open up the generated html in your browser for a docs.rs site.
 
 ## Differences to jSpaces
  - rspaces only provide support for ipv4 over tcp in case of remote spaces.
@@ -29,4 +31,4 @@ Install the rust-analyzer plugin for your favorite IDE/editor for help with rust
 - More macros for reducing boiler plate code
 
 ## Known issues
-Using rustc v1.58-v1.60 will result in error messages for library macros when other errors is found by the compiler. To remove the errors, either fix the other errors, or update rust to atleast v1.61
+Introducing errors to your code will result in the compiler marking the `new_tuple!()` macro and the `.formal()` and `.actual()` methods with errors as well if using any form of integer. 

@@ -443,7 +443,7 @@ impl RemoteSpace {
         stream.set_nonblocking(false).unwrap();
         conn.remove(0);
         stream.write(conn.as_bytes())?;
-        let mut buf = [0; 2];
+        let mut buf = [0; 20];
 
         let n = stream.read(&mut buf[..])?;
         let inc_string = String::from_utf8_lossy(&buf[..n]);

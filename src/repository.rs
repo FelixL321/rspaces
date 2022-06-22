@@ -46,6 +46,7 @@ impl Repository {
     ///
     /// # Example
     /// ```
+    /// # use rspaces::*
     /////Create new repo
     ///let repo = Arc::new(Repository::new());
     ///

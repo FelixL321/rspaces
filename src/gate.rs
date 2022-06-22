@@ -149,7 +149,7 @@ impl Connection {
                 Ok(_) => break,
                 Err(_) => {}
             }
-            match self.stream.read(&mut buffer) {
+            match self.stream.read(&mut buffer[..]) {
                 Ok(n) => {
                     let inc_string = String::from_utf8_lossy(&buffer[..n]);
                     if inc_string.len() < 1 {

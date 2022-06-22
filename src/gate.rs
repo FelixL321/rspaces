@@ -41,7 +41,7 @@ pub struct Gate {
 }
 
 impl Gate {
-    pub fn new_gate(addr: String, repo: Arc<Repository>) -> std::io::Result<Arc<Gate>> {
+    pub(crate) fn new_gate(addr: String, repo: Arc<Repository>) -> std::io::Result<Arc<Gate>> {
         let (tx, rx) = mpsc::channel();
         match TcpListener::bind(addr) {
             Ok(listener) => {

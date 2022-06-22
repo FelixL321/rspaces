@@ -11,6 +11,7 @@ pub struct Repository {
 }
 
 impl Repository {
+    /// Creates new repository
     pub fn new() -> Repository {
         Repository {
             spaces: Mutex::new(HashMap::new()),
@@ -33,6 +34,28 @@ impl Repository {
         let mut s = self.spaces.lock().unwrap();
         s.remove_entry(&name);
     }
+    /// Adds a new gate for a repository
+    ///
+    /// # Arguments
+    /// First argument is a Arc reference to the repository for which a gate should be opened
+    ///
+    /// Second argument is the gates identifier for this repo
+    ///
+    /// Third argument is a connection string used to bind to a specific socket address.
+    ///
+    ///
+    /// # Example
+    /// ```
+    /////Create new repo
+    ///let repo = Arc::new(Repository::new());
+    ///
+    /////Add gate to the repository running on localhost port 3800
+    ///Repository::add_gate(
+    ///    Arc::clone(&repo),
+    ///    String::from("gate1"),
+    ///    "127.0.0.1:3800".to_string(),
+    ///)
+    /// ```
     pub fn add_gate(repo: Arc<Repository>, name: String, addr: String) -> std::io::Result<()> {
         let clone = Arc::clone(&repo);
         let mut gates = repo.gates.lock().unwrap();

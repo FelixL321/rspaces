@@ -32,7 +32,7 @@ fn main() {
         ))
         .unwrap();
 
-    let greeting = greetingtuple.get_field::<String>(1).unwrap();
-    let name = nametuple.get_field::<String>(1).unwrap();
+    let greeting = greetingtuple.get_field::<String>(1);
+    let name = nametuple.get_field::<String>(1);
     println!("{} {}!", greeting, name);
 }

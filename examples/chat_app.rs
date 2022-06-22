@@ -26,23 +26,34 @@ fn main() {
     }
 }
 
+//Handle a joining client
 fn handle_join() {
-    println!("Please type a ip and port to join");
+    println!("Please type a ip and port to join (For example \"127.0.0.1:3800\")");
     let mut conn_string = input();
     conn_string = conn_string.add("/main");
+
+    //Connecting to remote space
     let space = Arc::new(RemoteSpace::new(conn_string).unwrap());
+
     handle_coms(space, true);
 }
 
+//Handle hosting a new space
 fn handle_host() {
-    println!("Please type a ip and port to host on");
+    println!("Please type a ip and port to host on (For example \"127.0.0.1:3800\")");
     let conn_string = input();
+
+    //Creating a repo and putting a new space into it
     let space = Arc::new(LocalSpace::new_sequential());
     let repo = Arc::new(Repository::new());
     repo.add_space(String::from("main"), Arc::clone(&space));
+
+    //Adding a gate to the repo
     Repository::add_gate(Arc::clone(&repo), String::from("main"), conn_string)
         .expect("couldnt connect");
     handle_coms(space, false);
+
+    //Remember to close gate
     repo.close_gate("main".to_string());
 }
 
@@ -66,8 +77,8 @@ fn handle_coms<T: Space>(space: Arc<T>, mut starting: bool) {
                     String::new().formal()
                 ))
                 .unwrap();
-            let name = t.get_field::<String>(1).unwrap();
-            let msg = t.get_field::<String>(2).unwrap();
+            let name = t.get_field::<String>(1);
+            let msg = t.get_field::<String>(2);
             if *msg == String::from("exit") {
                 println!("Partner quit, quitting as well");
                 break;
@@ -79,6 +90,7 @@ fn handle_coms<T: Space>(space: Arc<T>, mut starting: bool) {
     }
 }
 
+//Basic input helper function
 fn input() -> String {
     let mut s = String::new();
     let _ = stdout().flush();

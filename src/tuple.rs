@@ -43,6 +43,9 @@ impl Tuple {
     /// Get the value from a field of a tuple. Need to be passed the expected datatype in order for a cast.
     /// Will return None if the expected type is not equal to the actual. Othwerwise it will return Some(value)
     ///
+    /// # Panic
+    /// Function panics if index is not valid in the tuple or if the type supplied is not equal of that of the field.
+    ///
     /// # Example
     /// ```
     /// # use rspaces::*;
@@ -54,18 +57,17 @@ impl Tuple {
     /// let tuple = Tuple::new(fields);
     ///
     /// //Get tuple
-    /// let five = *tuple.get_field::<i32>(0).unwrap();
-    /// let charb = *tuple.get_field::<char>(1).unwrap();
+    /// let five = *tuple.get_field::<i32>(0);
+    /// let charb = *tuple.get_field::<char>(1);
     ///
     /// assert_eq!(5, five);
     /// assert_eq!('b', charb);
     /// ```
-    pub fn get_field<T: 'static>(&self, index: usize) -> Option<&T> {
-        let b = (*(*self.fields.get(index)?)).as_any().downcast_ref::<T>();
-        return b;
-    }
-    pub fn size(&self) -> usize {
-        self.fields.len()
+    pub fn get_field<T: 'static>(&self, index: usize) -> &T {
+        let b = (*(*self.fields.get(index).expect("Wrong index")))
+            .as_any()
+            .downcast_ref::<T>();
+        return b.unwrap();
     }
 }
 

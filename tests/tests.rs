@@ -28,24 +28,20 @@ mod tests {
         let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
         let tuple = Tuple::new(fields);
 
-        let x = tuple.get_field::<i32>(0).expect("could not cast");
+        let x = tuple.get_field::<i32>(0);
         assert_eq!(5, *x);
-        let _x = tuple.get_field::<char>(1).expect("could not cast");
+        let _x = tuple.get_field::<char>(1);
     }
 
     #[test]
+    #[should_panic]
     fn tuple_test_failing() {
         let a: i32 = 5;
         let b: char = 'b';
         let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
         let tuple = Tuple::new(fields);
 
-        match tuple.get_field::<u64>(0) {
-            Some(_x) => {
-                assert!(false, "Got something, when we should not");
-            }
-            None => assert!(true),
-        }
+        tuple.get_field::<u64>(0);
     }
 
     #[test]
@@ -58,8 +54,8 @@ mod tests {
         space.put(tuple).unwrap();
         let q = new_template!(5.actual(), 'a'.formal());
         let t = space.get(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -93,8 +89,8 @@ mod tests {
 
         let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -114,8 +110,8 @@ mod tests {
         q.fields.push('a'.formal());
         loop {
             if let Ok(t) = reciever.getp(q.clone()) {
-                assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-                assert_eq!('b', *t.get_field::<char>(1).unwrap());
+                assert_eq!(5, *t.get_field::<i32>(0));
+                assert_eq!('b', *t.get_field::<char>(1));
                 return;
             }
         }
@@ -134,8 +130,8 @@ mod tests {
 
         let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.query(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
     #[test]
     fn multithread_query_nonblock() {
@@ -156,8 +152,8 @@ mod tests {
         loop {
             c += 1;
             if let Ok(t) = reciever.queryp(q.clone()) {
-                assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-                assert_eq!('b', *t.get_field::<char>(1).unwrap());
+                assert_eq!(5, *t.get_field::<i32>(0));
+                assert_eq!('b', *t.get_field::<char>(1));
                 println!("{}", c);
                 return;
             }
@@ -186,11 +182,11 @@ mod tests {
         q.fields.push('a'.formal());
         let tvec = reciever.getall(q).unwrap();
         let t = tvec.get(0).expect("should be touple");
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
         let t = tvec.get(1).expect("should be touple");
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('c', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('c', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -215,11 +211,11 @@ mod tests {
         q.fields.push('b'.formal());
         let tvec = reciever.queryall(q).unwrap();
         let t = tvec.get(0).expect("should be touple");
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
         let t = tvec.get(1).expect("should be touple");
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('c', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('c', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -228,8 +224,8 @@ mod tests {
         space.put(new_tuple!(5, 'b')).unwrap();
         let q = new_template!(5.actual(), 'a'.formal());
         let t = space.get(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -244,13 +240,13 @@ mod tests {
 
         let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
 
         let q = new_template!(4.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
-        assert_eq!(4, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(4, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -273,13 +269,13 @@ mod tests {
 
         let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
 
         let q = new_template!(4.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
-        assert_eq!(4, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(4, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -301,13 +297,13 @@ mod tests {
         }
         let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
 
         let q = new_template!(4.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
-        assert_eq!(4, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(4, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -322,13 +318,13 @@ mod tests {
 
         let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
 
         let q = new_template!(4.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
-        assert_eq!(4, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(4, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -351,13 +347,13 @@ mod tests {
         });
         let q = new_template!(5.actual(), 'a'.formal());
         let t = space2.get(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
 
         let q = new_template!(4.actual(), 'a'.formal());
         let t = space1.get(q).unwrap();
-        assert_eq!(4, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(4, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -396,23 +392,23 @@ mod tests {
 
         let q = new_template!(4.actual(), 'a'.formal());
         let t = space2.get(q).unwrap();
-        assert_eq!(4, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(4, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
 
         let q = new_template!(5.actual(), 'a'.formal());
         let t = space2.get(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
 
         let q = new_template!(4.actual(), 'a'.formal());
         let t = space1.get(q).unwrap();
-        assert_eq!(4, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(4, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
 
         let q = new_template!(5.actual(), 'a'.formal());
         let t = space3.get(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -438,9 +434,9 @@ mod tests {
         let v = serde_json::to_string(&tuple).unwrap();
         print!("{}", v);
         let x: Tuple = serde_json::from_str(&v).unwrap();
-        let ap = x.get_field::<i32>(0).expect("could not cast");
+        let ap = x.get_field::<i32>(0);
         assert_eq!(5, *ap);
-        let bp = tuple.get_field::<char>(1).expect("could not cast");
+        let bp = tuple.get_field::<char>(1);
         assert_eq!('b', *bp);
     }
 
@@ -459,9 +455,9 @@ mod tests {
         let v = serde_json::to_string(&tuple).unwrap();
         println!("{}", v);
         let x: Tuple = serde_json::from_str(&v).unwrap();
-        let ap = x.get_field::<i32>(0).expect("could not cast");
+        let ap = x.get_field::<i32>(0);
         assert_eq!(5, *ap);
-        let bp = tuple.get_field::<TestStruct>(1).expect("could not cast");
+        let bp = tuple.get_field::<TestStruct>(1);
         assert_eq!(27, (*bp).x);
         assert_eq!(65.7, (*bp).y);
     }
@@ -480,8 +476,8 @@ mod tests {
         let template: Template = serde_json::from_str(&q_json).unwrap();
 
         let t = space.get(template).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
 
     #[test]
@@ -490,8 +486,8 @@ mod tests {
         space.put(new_tuple!(5, 7)).unwrap();
         let template = new_template!(5.actual(), 7.actual());
         let tuple = space.query(template).unwrap();
-        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-        assert_eq!(7, *tuple.get_field::<i32>(1).unwrap());
+        assert_eq!(5, *tuple.get_field::<i32>(0));
+        assert_eq!(7, *tuple.get_field::<i32>(1));
         let x: i64 = 5;
         let temp2 = new_template!(x.actual(), 7.actual());
         match space.queryp(temp2) {
@@ -514,8 +510,8 @@ mod tests {
         let mut m_from_json: Message = serde_json::from_str(&m_json).expect("please");
         assert_eq!(m_from_json.action, MessageType::Put);
         let tuple = m_from_json.tuple.remove(0);
-        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
+        assert_eq!(5, *tuple.get_field::<i32>(0));
+        assert_eq!('b', *tuple.get_field::<char>(1));
         space.put(tuple).unwrap();
         let m = Message {
             action: MessageType::Get,
@@ -527,8 +523,8 @@ mod tests {
         assert_eq!(m_from_json.action, MessageType::Get);
         let template = m_from_json.template;
         let tuple = space.get(template).unwrap();
-        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
+        assert_eq!(5, *tuple.get_field::<i32>(0));
+        assert_eq!('b', *tuple.get_field::<char>(1));
     }
 
     #[test]
@@ -557,8 +553,8 @@ mod tests {
                 let inc_string = String::from_utf8_lossy(&buffer[..n]);
                 let mut message = serde_json::from_str::<Message>(&inc_string).unwrap();
                 let tuple = message.tuple.remove(0);
-                assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-                assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
+                assert_eq!(5, *tuple.get_field::<i32>(0));
+                assert_eq!('b', *tuple.get_field::<char>(1));
             }
             Err(e) => {
                 assert!(false, "{}", e);
@@ -573,8 +569,8 @@ mod tests {
                 Ok(t) => t,
                 Err(_) => break,
             };
-            assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-            assert_eq!('b', *t.get_field::<char>(1).unwrap());
+            assert_eq!(5, *t.get_field::<i32>(0));
+            assert_eq!('b', *t.get_field::<char>(1));
         }
     }
 
@@ -586,8 +582,8 @@ mod tests {
         thread::spawn(move || {
             let space = RemoteSpace::new(String::from("localhost:3801/space")).unwrap();
             let tuple = space.get(new_template!(5.actual(), 'b'.formal())).unwrap();
-            assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-            assert_eq!('b', *tuple.get_field::<char>(1).unwrap());
+            assert_eq!(5, *tuple.get_field::<i32>(0));
+            assert_eq!('b', *tuple.get_field::<char>(1));
         });
         space.put(new_tuple!(5, 'b')).unwrap();
         Repository::add_gate(repo, String::from("gate"), String::from("127.0.0.1:3801"))
@@ -598,8 +594,8 @@ mod tests {
                 Ok(t) => t,
                 Err(_) => break,
             };
-            assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-            assert_eq!('b', *t.get_field::<char>(1).unwrap());
+            assert_eq!(5, *t.get_field::<i32>(0));
+            assert_eq!('b', *t.get_field::<char>(1));
         }
     }
 
@@ -630,7 +626,7 @@ mod tests {
 
         let q = new_template!(5.actual(), 'a'.formal());
         let t = reciever.get(q).unwrap();
-        assert_eq!(5, *t.get_field::<i32>(0).unwrap());
-        assert_eq!('b', *t.get_field::<char>(1).unwrap());
+        assert_eq!(5, *t.get_field::<i32>(0));
+        assert_eq!('b', *t.get_field::<char>(1));
     }
 }

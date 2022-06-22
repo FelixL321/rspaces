@@ -49,7 +49,7 @@ let formal = 'a'.formal()
 let actual = 'a'.actual()
 
 //Create the template
-let tuple = new_template()!(formal, actual);
+let tuple = new_template!(formal, actual);
 
 //Or do it on a single line.
 let tuple = new_template!('a'.formal(), 'a'.actual());

@@ -440,7 +440,7 @@ mod tests {
         assert_eq!('b', *bp);
     }
 
-    #[derive(Serialize, Deserialize, Clone, PartialEq, TupleField)]
+    #[derive(Serialize, Deserialize, Clone, PartialEq, TupleField, Debug)]
     struct TestStruct {
         x: i32,
         y: f64,

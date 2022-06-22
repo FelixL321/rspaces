@@ -459,7 +459,7 @@ impl RemoteSpace {
     fn send(&self, m: Message) -> Result<(), std::io::Error> {
         let mut stream = self.stream.lock().unwrap();
         let m_json = serde_json::to_string(&m)?;
-        stream.write(m_json.as_bytes())?;
+        stream.write_all(m_json.as_bytes())?;
         stream.flush()?;
         Ok(())
     }

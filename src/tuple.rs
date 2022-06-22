@@ -1,10 +1,10 @@
-use std::any::Any;
+use std::{any::Any, fmt::Debug};
 
 use serde::{Deserialize, Serialize};
 
 use crate::{implement_tuplefield_for, TemplateType};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Tuple {
     pub fields: Vec<Box<dyn TupleField>>,
 }
@@ -57,7 +57,7 @@ impl Tuple {
 }
 
 #[typetag::serde(tag = "field")]
-pub trait TupleField: Send + Sync {
+pub trait TupleField: Send + Sync + std::fmt::Debug {
     fn as_any(&self) -> &dyn Any;
     fn box_clone(&self) -> Box<dyn TupleField>;
     fn query(&self, element: &Box<dyn TupleField>, matching: &TemplateType) -> bool;

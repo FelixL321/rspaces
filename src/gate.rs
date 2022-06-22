@@ -77,17 +77,17 @@ impl Gate {
                                 space_string = inc_string.to_string();
                             }
                             Err(_) => {
-                                s.write("f".as_bytes()).ok();
+                                s.write_all("f".as_bytes()).ok();
                                 continue;
                             }
                         }
                         let space = match gate.repo.get_space(space_string) {
                             Some(space) => {
-                                s.write("t".as_bytes()).ok();
+                                s.write_all("t".as_bytes()).ok();
                                 space
                             }
                             None => {
-                                s.write("f".as_bytes()).ok();
+                                s.write_all("f".as_bytes()).ok();
                                 continue;
                             }
                         };
@@ -116,10 +116,7 @@ impl Gate {
             }
             let cons = gate.connections.lock().unwrap();
             for con in cons.iter() {
-                match con.send(()) {
-                    Ok(_) => continue,
-                    Err(_) => continue,
-                }
+                let _ = con.send(());
             }
             let mut children = gate.children.lock().unwrap();
             let n = children.len();
@@ -159,7 +156,7 @@ impl Connection {
                     let r_json = serde_json::to_string(&response).expect("Serialization error");
                     self.stream.flush().expect("Could not flush stream");
                     self.stream
-                        .write(r_json.as_bytes())
+                        .write_all(r_json.as_bytes())
                         .expect("Connection error");
                     self.stream.flush().expect("Could not flush stream");
                 }

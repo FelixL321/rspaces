@@ -442,8 +442,8 @@ impl RemoteSpace {
         let mut stream = TcpStream::connect(ip_string)?;
         stream.set_nonblocking(false).unwrap();
         conn.remove(0);
-        stream.write(conn.as_bytes())?;
-        let mut buf = [0; 20];
+        stream.write_all(conn.as_bytes())?;
+        let mut buf = [0; 2];
 
         let n = stream.read(&mut buf[..])?;
         let inc_string = String::from_utf8_lossy(&buf[..n]);

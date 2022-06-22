@@ -18,179 +18,178 @@ use crate::Template;
 use crate::Tuple;
 
 pub trait Space: Send + Sync {
-    /**
-    Finds a tuple matching the template in the space, removes it from the space and returns it.
-
-    Will block the current thread until a tuple is found
-
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put the tuple (5, 'a') in the space
-    space_put!(space, (5, 'a'));
-
-    // Create a query template for the tuple with a 5 followed by a char
-    let template = create_template!(5.actual(), char::formal());
-
-    //Query the space for the tuple
-    let tuple = space.get(&template);
-
-    assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-    assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
-
-    ```
-    */
+    /// Finds a tuple matching the template in the space, removes it from the space and returns it.
+    ///
+    /// Will block the current thread until a tuple is found
+    ///
+    /// # Error
+    /// Errors will only occur when used on a remotespace
+    ///
+    /// # Example
+    /// ```
+    /// # use rspaces::*;
+    /// # let space = LocalSpace::new_sequential();
+    /// //Put the tuple (5, 'a') in the space
+    /// space.put(new_tuple!(5, 'a'));
+    ///
+    /// // Create a query template for the tuple with a 5 followed by a char
+    /// let template = new_template!(5.actual(), 'b'.formal());
+    ///
+    /// //Query the space for the tuple
+    /// let tuple = space.get(template).unwrap();
+    ///
+    /// assert_eq!(5, *tuple.get_field::<i32>(0));
+    /// assert_eq!('a', *tuple.get_field::<char>(1));
+    ///
+    /// ```
     fn get(&self, template: Template) -> std::io::Result<Tuple>;
-    /**
-    Finds a tuple matching the template in the space, removes it from the space and returns it.
 
-    This does not blcok the current thread and therefore returns an option, as theres no garantuee for finding a tuple
-
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put the tuple (5, 'a') in the space
-    space_put!(space, (5, 'a'));
-
-    // Create a query template for the tuple with a 5 followed by a char
-    let template = create_template!(5.actual(), char::formal());
-
-    //Query the space for the tuple
-    if let Some(tuple) = space.getp(&template) {
-        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-        assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
-    } else {
-        assert!(false);
-    }
-
-    ```
-    */
+    /// Tries to get a matching tuple from the space by removing it without blocking
+    ///
+    /// # Errors
+    /// This will return an error if no tuple is found, but also if an io error occurs in a remotespace
+    ///
+    ///
+    /// # Example
+    /// ```
+    /// # use rspaces::*;
+    /// # let space = LocalSpace::new_sequential();
+    /// //Put the tuple (5, 'a') in the space
+    /// space.put(new_tuple!(5, 'a'));
+    ///
+    /// // Create a query template for the tuple with a 5 followed by a char
+    /// let template = new_template!(5.actual(), 'b'.formal());
+    ///
+    /// //Query the space for the tuple
+    /// if let Ok(tuple) = space.getp(template) {
+    /// assert_eq!(5, *tuple.get_field::<i32>(0));
+    /// assert_eq!('a', *tuple.get_field::<char>(1));
+    /// } else {
+    /// assert!(false);
+    /// }
+    ///
+    /// ```
+    ///
     fn getp(&self, template: Template) -> std::io::Result<Tuple>;
 
-    /**
-    Puts the given tuple into the tuple space
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    let a = 5;
-    let b = 'b';
-    let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
-    let tuple = Tuple::new(fields);
-    space.put(tuple);
-    ```
-    Alternatively the same can be done with a macro
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    let a = 5;
-    let b = 'b';
-    space_put!(space, (a, b))
-    ```
-    */
+    /// Puts the given tuple into the tuple space
+    /// # Example
+    /// ```
+    /// # use rspaces::*;
+    /// # let space = LocalSpace::new_sequential();
+    /// //Put the tuple (5, 'a') in the space
+    /// space.put(new_tuple!(5, 'a'));
+    /// ```
     fn put(&self, tuple: Tuple) -> Result<(), std::io::Error>;
-    /**
-    Finds a tuple matching the template in the space, and returns it without removing it.
 
-    This does not blcok the current thread and therefore returns an option, as theres no garantuee for finding a tuple
-
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put the tuple (5, 'a') in the space
-    space_put!(space, (5, 'a'));
-
-    // Create a query template for the tuple with a 5 followed by a char
-    let template = create_template!(5.actual(), char::formal());
-
-    //Query the space for the tuple
-    if let Some(tuple) = space.queryp(&template) {
-        assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-        assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
-    } else {
-        assert!(false);
-    }
-
-    ```
-    */
+    /// Finds a tuple matching the template in the space, and returns it without removing it.
+    ///
+    /// This does not blcok the current thread and therefore returns an option, as theres no garantuee for finding a tuple
+    ///
+    /// # Errors
+    /// This will return an error if no tuple is found, but also if an io error occurs in a remotespace
+    ///
+    ///
+    /// # Example
+    /// ```
+    /// # use rspaces::*;
+    /// # let space = LocalSpace::new_sequential();
+    /// //Put the tuple (5, 'a') in the space
+    /// space.put(new_tuple!(5, 'a'));
+    ///
+    /// // Create a query template for the tuple with a 5 followed by a char
+    /// let template = new_template!(5.actual(), 'b'.formal());
+    ///
+    /// //Query the space for the tuple
+    /// if let Ok(tuple) = space.queryp(template) {
+    /// assert_eq!(5, *tuple.get_field::<i32>(0));
+    /// assert_eq!('a', *tuple.get_field::<char>(1));
+    /// } else {
+    /// assert!(false);
+    /// }
+    ///
+    /// ```
+    ///
     fn queryp(&self, query: Template) -> std::io::Result<Tuple>;
 
-    /**
-    Finds a tuple matching the template in the space, and returns it without removing it.
-
-    Will block the current thread until a tuple is found
-
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put the tuple (5, 'a') in the space
-    space_put!(space, (5, 'a'));
-
-    // Create a query template for the tuple with a 5 followed by a char
-    let template = create_template!(5.actual(), char::formal());
-
-    //Query the space for the tuple
-    let tuple = space.query(&template);
-
-    assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-    assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
-
-    ```
-    */
+    /// Finds a tuple matching the template in the space, and returns it without removing it.
+    ///
+    /// Will block the current thread until a tuple is found
+    ///
+    /// # Error
+    /// Errors will only occur when used on a remotespace
+    ///
+    /// # Example
+    /// ```
+    /// # use rspaces::*;
+    /// # let space = LocalSpace::new_sequential();
+    /// //Put the tuple (5, 'a') in the space
+    /// space.put(new_tuple!(5, 'a'));
+    ///
+    /// // Create a query template for the tuple with a 5 followed by a char
+    /// let template = new_template!(5.actual(), 'b'.formal());
+    ///
+    /// //Query the space for the tuple
+    /// let tuple = space.query(template).unwrap();
+    ///
+    /// assert_eq!(5, *tuple.get_field::<i32>(0));
+    /// assert_eq!('a', *tuple.get_field::<char>(1));
+    ///
+    ///
+    /// ```
     fn query(&self, template: Template) -> std::io::Result<Tuple>;
-    /**
-    Gets all tuples in the space matching the template and removes them from the space
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put tuples in the space
-    space_put!(space, (5, 'a'));
-    space_put!(space, (4, 'b'));
-    space_put!(space, (4, 'c'));
-
-    // Create a query template for the tuple with a 4 followed by a char
-    let template = create_template!(4.actual(), char::formal());
-
-    //Query the space for all tuples matching
-    let tuples = space.getall(&template);
-
-    assert_eq!(2, tuples.len());
-    for tuple in tuples.iter(){
-        assert_eq!(4, *tuple.get_field::<i32>(0).unwrap());
-    }
-
-    ```
-    */
+    /// Gets all tuples in the space matching the template and removes them from the space
+    ///
+    /// # Error
+    /// Errors will only occur when used on a remotespace
+    ///
+    /// # Example
+    /// ```
+    /// # use rspaces::*;
+    /// # let space = LocalSpace::new_sequential();
+    /// //Put the tuple (5, 'a') in the space
+    /// space.put(new_tuple!(5, 'a'));
+    /// space.put(new_tuple!(4, 'b'));
+    /// space.put(new_tuple!(4, 'c'));
+    ///
+    /// // Create a query template for the tuple with a 5 followed by a char
+    /// let template = new_template!(4.actual(), 'b'.formal());
+    ///
+    /// //Query the space for all tuples matching
+    /// let tuples = space.getall(template).unwrap();
+    ///
+    /// assert_eq!(2, tuples.len());
+    /// for tuple in tuples.iter(){
+    ///     assert_eq!(4, *tuple.get_field::<i32>(0));
+    /// }
+    ///
+    /// ```
     fn getall(&self, template: Template) -> std::io::Result<Vec<Tuple>>;
-    /**
-    Gets all tuples in the space matching the template without removing them
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    //Put tuples in the space
-    space_put!(space, (5, 'a'));
-    space_put!(space, (4, 'b'));
-    space_put!(space, (4, 'c'));
-
-    // Create a query template for the tuple with a 4 followed by a char
-    let template = create_template!(4.actual(), char::formal());
-
-    //Query the space for all tuples matching
-    let tuples = space.queryall(&template);
-
-    assert_eq!(2, tuples.len());
-    for tuple in tuples.iter(){
-        assert_eq!(4, *tuple.get_field::<i32>(0).unwrap());
-    }
-
-    ```
-    */
+    /// Gets all tuples in the space matching the template without removing them
+    /// # Error
+    /// Errors will only occur when used on a remotespace
+    ///
+    /// # Example
+    /// ```
+    /// # use rspaces::*;
+    /// # let space = LocalSpace::new_sequential();
+    /// //Put the tuple (5, 'a') in the space
+    /// space.put(new_tuple!(5, 'a'));
+    /// space.put(new_tuple!(4, 'b'));
+    /// space.put(new_tuple!(4, 'c'));
+    ///
+    /// // Create a query template for the tuple with a 5 followed by a char
+    /// let template = new_template!(4.actual(), 'b'.formal());
+    ///
+    /// //Query the space for all tuples matching
+    /// let tuples = space.queryall(template).unwrap();
+    ///
+    /// assert_eq!(2, tuples.len());
+    /// for tuple in tuples.iter(){
+    ///     assert_eq!(4, *tuple.get_field::<i32>(0));
+    /// }
+    ///
+    /// ```
     fn queryall(&self, template: Template) -> std::io::Result<Vec<Tuple>>;
 }
 
@@ -202,30 +201,25 @@ enum SpaceType {
     Random,
 }
 
-/**
-A tuple space for storing tuples and retrieving tuples
-
-# Example
-
-```
-# use rspaces::*;
-//Create Space
-let space = Space::new_sequential();
-
-//Put the tuple (5, 'a') in the space
-space_put!(space, (5, 'a'));
-
-// Create a query template for the tuple with a 5 followed by a char
-let template = create_template!(5.actual(), char::formal());
-
-//Query the space for the tuple
-let tuple = space.get(&template);
-
-assert_eq!(5, *tuple.get_field::<i32>(0).unwrap());
-assert_eq!('a', *tuple.get_field::<char>(1).unwrap());
-
-```
-*/
+/// A tuple space for storing tuples and retrieving tuples
+///
+/// # Example
+///
+/// ```
+/// # use rspaces::*;
+/// # let space = LocalSpace::new_sequential();
+/// //Put the tuple (5, 'a') in the space
+/// space.put(new_tuple!(5, 'a'));
+///
+/// // Create a query template for the tuple with a 5 followed by a char
+/// let template = new_template!(5.actual(), 'b'.formal());
+///
+/// //Query the space for the tuple
+/// let tuple = space.get(template).unwrap();
+///
+/// assert_eq!(5, *tuple.get_field::<i32>(0));
+/// assert_eq!('a', *tuple.get_field::<char>(1));
+/// ```
 pub struct LocalSpace {
     v: Mutex<Vec<Tuple>>,
     listeners: Mutex<Vec<Sender<()>>>,

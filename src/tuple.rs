@@ -16,27 +16,17 @@ impl Clone for Box<dyn TupleField> {
 }
 
 impl Tuple {
-    /**
-    Creates a new tuple from a vector of boxes of tuplefields.
-
-    # Example
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    let a = 5;
-    let b = 'b';
-    let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
-    let tuple = Tuple::new(fields);
-    ```
-    Alternatively a macro can be used to create the tuple and put it into a space directly
-    ```
-    # use rspaces::*;
-    # let space = Space::new_sequential();
-    let a = 5;
-    let b = 'b';
-    space_put!(space, (a, b));
-    ```
-     */
+    /// Creates a new tuple from a vector of boxes of tuplefields.
+    ///
+    /// # Example
+    /// ```
+    /// # use rspaces::*;
+    /// let a = 5;
+    /// let b = 'b';
+    /// let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
+    /// let tuple = Tuple::new(fields);
+    /// ```
+    ///
     pub fn new(fields: Vec<Box<dyn TupleField>>) -> Tuple {
         Tuple { fields }
     }
@@ -49,19 +39,14 @@ impl Tuple {
     /// # Example
     /// ```
     /// # use rspaces::*;
-    /// # let space = Space::new_sequential();
+    /// # let space = LocalSpace::new_sequential();
     /// //Create tuple
-    /// let a = 5;
-    /// let b = 'b';
-    /// let fields: Vec<Box<dyn TupleField>> = vec![Box::new(a), Box::new(b)];
-    /// let tuple = Tuple::new(fields);
+    /// let tuple = new_tuple!(5, 'a');
     ///
-    /// //Get tuple
-    /// let five = *tuple.get_field::<i32>(0);
-    /// let charb = *tuple.get_field::<char>(1);
+    /// //Get fields
+    /// assert_eq!(5, *tuple.get_field::<i32>(0));
+    /// assert_eq!('a', *tuple.get_field::<char>(1));
     ///
-    /// assert_eq!(5, five);
-    /// assert_eq!('b', charb);
     /// ```
     pub fn get_field<T: 'static>(&self, index: usize) -> &T {
         let b = (*(*self.fields.get(index).expect("Wrong index")))

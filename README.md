@@ -8,21 +8,12 @@ rspaces = { git = "https://github.com/FelixL321/rspaces" }
 ```
 
 ### Plugins
-Install the rust-analyzer plugin for your favorite IDE/editor for help with rust syntax
+Install the rust-analyzer plugin for your favorite IDE/editor for help with rust syntax and to provide with tooltips when hovering over library functions
 
 ## Usage
-To create a new space use the constructor for one of the space types.
-```rust
-let space_sequential = LocalSpace::new_sequential();
-let space_pile = LocalSpace::new_pile();
-```
-
-rspaces provide 2 ways of creating new tuples. The first includes making a new instance of a fields vector and then converting it to a tuple:
-```rust
-let fields: Vec<Box<dyn TupleField>> = vec![Box::new(1), Box::new('a')];
-let tuple = Tuple::new(fields);
-```
-rspaces however also provides you a shorthand macro for the same:
+1. [Basic usage](./docs/basic.md)
+2. [Concurrent usage](./docs/concurrent.md)
+3. [Concurrent usage](./docs/concurrent.md)
 
 
 ## Differences to jSpaces

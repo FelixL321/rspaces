@@ -1,7 +1,7 @@
 [package]
 name = "rspaces"
 description = "A rust implementation of pspaces, used to teach distributed systems programming"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 license-file = "LICENSE"
 readme = "README.md"

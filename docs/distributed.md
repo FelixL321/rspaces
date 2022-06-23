@@ -33,3 +33,8 @@ It is important to remember to close gates, as it will otherwise sometimes resul
 ```rust
 repo.close_gate(String::from("gate"));
 ```
+## Remote space
+To connect to a gate we are gonna use remote spaces. These are initialized by running the following
+```rust
+let space = RemoteSpace::new(String::from("127.0.0.1:3801/space"));
+```
